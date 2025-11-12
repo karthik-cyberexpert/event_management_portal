@@ -228,12 +228,12 @@ const formSchema = z.object({
     });
   }
 
-  // Word count validation for Proposed Outcomes (Max 145 words)
+  // Word count validation for Proposed Outcomes (Max 149 words)
   const outcomeWordCount = countWords(data.proposed_outcomes);
-  if (outcomeWordCount > 145) {
+  if (outcomeWordCount > 149) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Proposed Outcomes must be 145 words or less. Current count: ${outcomeWordCount}`,
+      message: `Proposed Outcomes must be 149 words or less. Current count: ${outcomeWordCount}`,
       path: ['proposed_outcomes'],
     });
   }
@@ -790,8 +790,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Proposed Outcomes</FormLabel>
-                        <span className={cn("text-xs", outcomeWordCount > 145 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {outcomeWordCount} / 145 words
+                        <span className={cn("text-xs", outcomeWordCount > 149 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {outcomeWordCount} / 149 words
                         </span>
                       </div>
                       <FormControl>
