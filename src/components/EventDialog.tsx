@@ -884,7 +884,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                   <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormItem><FormLabel>HOD Approval</FormLabel><Input value={event.hod_approval_at ? `Approved on ${format(new Date(event.hod_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.hod_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
-                    <FormItem><FormLabel>Dean Industrial Approval</FormLabel><Input value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
+                    <FormItem><FormLabel>Dean IR Approval</FormLabel><Input value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
                     <FormItem><FormLabel>Principal Approval</FormLabel><Input value={event.principal_approval_at ? `Approved on ${format(new Date(event.principal_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.principal_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
                   </div>
                   <FormItem>

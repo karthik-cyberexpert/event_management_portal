@@ -112,7 +112,7 @@ const PrincipalDashboard = () => {
                       <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                       <TableCell>
                         <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
-                          {event.status.replace(/_/g, ' ')}
+                          {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
                         </Badge>
                       </TableCell>
                       <TableCell>

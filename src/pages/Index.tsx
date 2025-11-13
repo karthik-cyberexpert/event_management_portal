@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import CoordinatorDashboard from "./coordinator/Dashboard";
 import HodDashboard from "./hod/Dashboard";
-import DeanDashboard from "./dean/Dashboard";
+import DeanIrDashboard from "./dean/IrDashboard";
 import PrincipalDashboard from "./principal/Dashboard";
 import AdminDashboard from "./admin/Dashboard";
 
@@ -18,7 +18,7 @@ const Index = () => {
     case 'hod':
       return <HodDashboard />;
     case 'dean':
-      return <DeanDashboard />;
+      return <DeanIrDashboard />;
     case 'principal':
       return <PrincipalDashboard />;
     case 'admin':

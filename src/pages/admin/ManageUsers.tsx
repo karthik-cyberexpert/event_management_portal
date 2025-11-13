@@ -27,6 +27,14 @@ const ALL_ROLES = ['coordinator', 'hod', 'dean', 'principal', 'admin'] as const;
 type Role = typeof ALL_ROLES[number];
 type CoordinatorFilter = 'department' | 'club' | 'society';
 
+const roleDisplayMap: Record<Role, string> = {
+  coordinator: 'Coordinators',
+  hod: 'HODs',
+  dean: 'Dean IRs',
+  principal: 'Principals',
+  admin: 'Admins',
+};
+
 const ManageUsers = () => {
   const [users, setUsers] = useState<UserWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +122,7 @@ const ManageUsers = () => {
 
       <Tabs value={activeRole} onValueChange={(value) => setActiveRole(value as Role)} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          {ALL_ROLES.map(role => (<TabsTrigger key={role} value={role} className="capitalize">{role}s</TabsTrigger>))}
+          {ALL_ROLES.map(role => (<TabsTrigger key={role} value={role}>{roleDisplayMap[role]}</TabsTrigger>))}
         </TabsList>
 
         {ALL_ROLES.map(role => (

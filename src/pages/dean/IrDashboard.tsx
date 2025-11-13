@@ -26,7 +26,7 @@ const statusColors = {
   cancelled: 'bg-gray-500',
 };
 
-const DeanDashboard = () => {
+const DeanIrDashboard = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
@@ -111,7 +111,7 @@ const DeanDashboard = () => {
                     <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                     <TableCell>
                       <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
-                        {event.status.replace(/_/g, ' ')}
+                        {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -144,4 +144,4 @@ const DeanDashboard = () => {
   );
 };
 
-export default DeanDashboard;
+export default DeanIrDashboard;

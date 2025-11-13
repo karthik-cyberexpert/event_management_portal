@@ -41,7 +41,7 @@ type EventActionDialogProps = {
 
 const roleActions = {
   hod: {
-    approve: { label: 'Approve & Forward to Dean', status: 'pending_dean', timestampField: 'hod_approval_at' },
+    approve: { label: 'Approve & Forward to Dean IR', status: 'pending_dean', timestampField: 'hod_approval_at' },
     return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
   dean: {
@@ -51,7 +51,7 @@ const roleActions = {
   principal: {
     approve: { label: 'Approve Event', status: 'approved', timestampField: 'principal_approval_at' },
     reject: { label: 'Reject', status: 'rejected' },
-    return: { label: 'Return to Dean', status: 'returned_to_dean' },
+    return: { label: 'Return to Dean IR', status: 'returned_to_dean' },
   },
 };
 
@@ -221,7 +221,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
             <div className="border-t pt-4 space-y-2 mt-4">
               <div><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</div>
-              <div><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
+              <div><strong>Dean IR Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
               <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>
             </div>
           </div>

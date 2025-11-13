@@ -155,7 +155,7 @@ const AllEvents = () => {
                     <SelectItem value="all">All Statuses</SelectItem>
                     {ALL_STATUSES.map(status => (
                       <SelectItem key={status} value={status} className="capitalize">
-                        {status.replace(/_/g, ' ')}
+                        {status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -193,7 +193,7 @@ const AllEvents = () => {
                         <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={`${statusColors[event.status]} text-white capitalize`}>
-                            {event.status.replace(/_/g, ' ')}
+                            {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
                           </Badge>
                         </TableCell>
                         <TableCell>
