@@ -85,7 +85,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { remarks: event.remarks || '' },
+    defaultValues: { remarks: '' }, // Clear default remarks to ensure new input
   });
 
   const handleAction = async (actionType: 'approve' | 'reject' | 'return') => {
@@ -239,6 +239,16 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
               <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>
             </div>
           </div>
+          
+          {/* NEW: Display previous remarks as view-only */}
+          {event.remarks && (
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-2 flex items-center">
+                <MessageSquare className="h-4 w-4 mr-2" /> Last Approver Remarks (View Only)
+              </h4>
+              <Textarea value={event.remarks} disabled className="bg-gray-50" />
+            </div>
+          )}
 
           <Form {...form}>
             <form className="space-y-4">
@@ -247,7 +257,8 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
                 name="remarks"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Remarks</FormLabel>
+                    {/* Renamed label for clarity */}
+                    <FormLabel>New Remarks for Action</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Add remarks (required for rejection/return)" {...field} />
                     </FormControl>
