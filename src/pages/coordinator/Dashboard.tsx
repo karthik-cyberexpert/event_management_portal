@@ -16,8 +16,16 @@ import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, ShieldCheck, XCircle, AlertCircle, PlusCircle } from 'lucide-react';
+import { List, ShieldCheck, XCircle, AlertCircle, PlusCircle, MoreHorizontal, Download } from 'lucide-react';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog'; // New Import
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
@@ -38,6 +46,7 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isReturnReasonDialogOpen, setIsReturnReasonDialogOpen] = useState(false);
+  const [isReportGeneratorOpen, setIsReportGeneratorOpen] = useState(false);
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -82,6 +91,11 @@ const CoordinatorDashboard = () => {
       mode: isReturned ? 'edit' : 'view' 
     });
   };
+  
+  const handleDownloadReport = (event: any) => {
+    setSelectedEvent(event);
+    setIsReportGeneratorOpen(true);
+  };
 
   const pendingEvents = allEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
   const returnedEvents = allEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
@@ -116,6 +130,7 @@ const CoordinatorDashboard = () => {
             ) : (
               eventsList.map((event: any) => {
                 const isReturned = event.status === 'returned_to_coordinator';
+                const isApproved = event.status === 'approved';
                 return (
                   <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                     <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
@@ -128,35 +143,42 @@ const CoordinatorDashboard = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {isReturned ? (
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={() => handleViewAction(event)}
-                          >
-                            Edit & Resubmit
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setSelectedEvent(event);
-                              setIsReturnReasonDialogOpen(true);
-                            }}
-                          >
-                            View Remarks
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleViewAction(event)}
-                        >
-                          View Details
-                        </Button>
-                      )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewAction(event)}>
+                            {isReturned ? 'Edit & Resubmit' : 'View Details'}
+                          </DropdownMenuItem>
+                          
+                          {isReturned && (
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setIsReturnReasonDialogOpen(true);
+                              }}
+                            >
+                              View Remarks History
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {isApproved && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDownloadReport(event)}
+                                className="text-primary font-medium"
+                              >
+                                <Download className="h-4 w-4 mr-2" /> Download Report
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -206,7 +228,7 @@ const CoordinatorDashboard = () => {
         </TabsContent>
       </Tabs>
 
-      {selectedEvent && (
+      {selectedEvent && selectedEvent.mode && (
         <EventDialog
           event={selectedEvent.id ? selectedEvent : null}
           isOpen={!!selectedEvent}
@@ -221,6 +243,17 @@ const CoordinatorDashboard = () => {
           isOpen={isReturnReasonDialogOpen}
           onClose={() => setIsReturnReasonDialogOpen(false)}
           event={selectedEvent}
+        />
+      )}
+      
+      {selectedEvent && isReportGeneratorOpen && (
+        <EventReportGeneratorDialog
+          event={selectedEvent}
+          isOpen={isReportGeneratorOpen}
+          onClose={() => {
+            setIsReportGeneratorOpen(false);
+            setSelectedEvent(null);
+          }}
         />
       )}
     </div>
