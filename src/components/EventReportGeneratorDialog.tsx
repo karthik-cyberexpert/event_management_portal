@@ -166,6 +166,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const handleGenerateReport = async (formData: ReportFormData) => {
     setIsGenerating(true);
     
+    let aiObjective = '';
+
     try {
       // 1. Upload Photos to Supabase Storage
       const photoUploadPromises = formData.photos.map(async (file) => {
@@ -177,30 +179,25 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       });
       const photoUrls = await Promise.all(photoUploadPromises);
 
-      // 2. Attempt to get AI-generated objective, with a fallback.
-      let aiObjective = event.objective; // Default to original objective
-      try {
-        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
-          body: JSON.stringify({
-            title: event.title,
-            objective: event.objective,
-            description: event.description,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+      // 2. Call Supabase Edge Function for AI Objective (Fix for 415/500 errors)
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
+        body: JSON.stringify({
+          title: event.title,
+          objective: event.objective,
+          description: event.description,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (aiError) throw aiError;
-        if (aiData.error) throw new Error(aiData.error);
-        
-        aiObjective = aiData.objective; // Success: use AI objective
-      } catch (aiError: any) {
-        console.warn('AI objective generation failed, using fallback.', aiError);
-        toast.warning('Could not generate AI objective.', {
-          description: 'Using the original objective for the report. This might be due to a server configuration issue.',
-        });
+      if (aiError) {
+        throw new Error(`AI service failed: ${aiError.message}`);
       }
+      if (aiData.error) {
+        throw new Error(`AI service returned an error: ${aiData.error}`);
+      }
+      aiObjective = aiData.objective;
 
       // 3. Prepare Social Media Links
       const social_media_links: { [key: string]: string } = {};
@@ -217,7 +214,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           faculty_participants: formData.faculty_participants,
           external_participants: formData.external_participants,
           activity_lead_by: formData.activity_lead_by,
-          activity_duration_hours: durationHours,
+          activity_duration_hours: durationHours, // Use calculated duration
           final_report_remarks: formData.final_report_remarks,
           report_photo_urls: photoUrls,
           social_media_links,
@@ -251,7 +248,6 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const renderReportContent = () => {
     if (!reportData) return null;
     const { aiObjective, photoUrls, formData, durationHours } = reportData;
-    const totalParticipants = formData.student_participants + formData.faculty_participants + formData.external_participants;
 
     return (
       <div className="printable-report bg-white text-black p-8 font-serif" ref={reportRef}>
@@ -273,7 +269,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           <h3 className="text-lg">Activity Report Copy</h3>
         </div>
 
-        {/* Section 1: Event Details (Improved Alignment and Spacing) */}
+        {/* Section 1: Event Details */}
         <section className="p-2">
           <div className="text-sm space-y-1">
             {/* Row 1 */}
@@ -343,7 +339,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           </div>
         </section>
 
-        {/* Section 2: Overview (Added spacing) */}
+        {/* Section 2: Overview */}
         <section className="p-2 mt-4">
           <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
           <div className="grid grid-cols-2 gap-x-4 text-sm space-y-2">
@@ -352,7 +348,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           </div>
         </section>
 
-        {/* Section 3: Attachments (Image fit changed to object-contain) */}
+        {/* Section 3: Attachments */}
         <section className="p-2 mt-4 page-break-before">
           <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
           <div className="grid grid-cols-2 gap-4">
@@ -417,7 +413,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select lead role" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {ACTIVITY_LEAD_BY_OPTIONS.map(option => (
