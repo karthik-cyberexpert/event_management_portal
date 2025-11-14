@@ -15,7 +15,8 @@ import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { List, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { List, ShieldCheck, XCircle, AlertCircle, PlusCircle } from 'lucide-react';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
 
 const statusColors = {
