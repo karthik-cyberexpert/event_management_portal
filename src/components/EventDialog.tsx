@@ -535,6 +535,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       let error;
       if (isEditMode) {
+        // When resubmitting a returned event, set status to 'resubmitted' and reset approvals
         let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
         if (event.status === 'returned_to_coordinator') {
           newStatus = 'resubmitted';
@@ -543,7 +544,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         const { error: updateError } = await supabase.from('events').update({ 
           ...eventData, 
           status: newStatus, 
-          remarks: null,
+          remarks: null, // Clear previous remarks upon resubmission
           hod_approval_at: null,
           dean_approval_at: null,
           principal_approval_at: null,
@@ -609,7 +610,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
           {(isEditMode || isReadOnly) && isReturnedOrRejected && (
             <Alert variant="destructive">
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Event Status: {event.status.replace(/_/g, ' ').toUpperCase()}</AlertTitle>
+              <AlertTitle>Event Status: {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR').toUpperCase()}</AlertTitle>
               <AlertDescription>
                 This event was returned or rejected. Please review the remarks below or click "View Remarks History" for details.
               </AlertDescription>
@@ -856,7 +857,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                               )}
                             >
                               <input {...getInputProps()} />
-                              <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                               {posterFile ? (
                                 <p className="text-sm font-medium">{posterFile.name}</p>
                               ) : currentPosterUrl ? (
@@ -921,6 +921,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
           onClose={() => setIsPosterDialogOpen(false)}
           posterUrl={currentPosterUrl}
           eventTitle={event.title}
+        />
+      )}
+      
+      {event && isReasonDialogOpen && (
+        <ReturnReasonDialog
+          isOpen={isReasonDialogOpen}
+          onClose={() => setIsReasonDialogOpen(false)}
+          event={event}
         />
       )}
     </>

@@ -1,128 +1,122 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Badge } from './ui/badge';
-import { ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { ScrollArea } from './ui/scroll-area';
+import { MessageSquare } from 'lucide-react';
 
 type EventHistory = {
-  id: string;
-  old_status: string;
-  new_status: string;
+  id: number;
+  event_id: string;
+  status: string;
   remarks: string | null;
   created_at: string;
-  changed_by: string; // UUID
-  profiles: { first_name: string; last_name: string; role: string } | null;
+  actor_role: string;
+  actor_name: string;
 };
 
 type ReturnReasonDialogProps = {
-  event: any;
   isOpen: boolean;
   onClose: () => void;
+  event: any;
 };
 
-const statusMap: { [key: string]: string } = {
-  pending_hod: 'Pending HOD',
-  returned_to_coordinator: 'Returned to Coordinator',
-  pending_dean: 'Pending Dean',
-  returned_to_hod: 'Returned to HOD',
-  pending_principal: 'Pending Principal',
-  returned_to_dean: 'Returned to Dean',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  cancelled: 'Cancelled',
+const roleDisplayMap: Record<string, string> = {
+  hod: 'HOD',
+  dean: 'Dean IR',
+  principal: 'Principal',
+  coordinator: 'Coordinator',
 };
 
-const ReturnReasonDialog = ({ event, isOpen, onClose }: ReturnReasonDialogProps) => {
+const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps) => {
   const [history, setHistory] = useState<EventHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isOpen || !event?.id) return;
+    if (!event?.id) return;
 
     const fetchHistory = async () => {
       setLoading(true);
+      // Fetch history records for the event, ordered by creation time
       const { data, error } = await supabase
         .from('event_history')
         .select(`
-          *,
-          profiles ( first_name, last_name, role )
+          id,
+          status,
+          remarks,
+          created_at,
+          actor_role,
+          actor_name
         `)
         .eq('event_id', event.id)
         .order('created_at', { ascending: false });
 
       if (error) {
-        toast.error('Failed to load event history.');
-        console.error(error);
-        setHistory([]);
+        toast.error('Failed to fetch event history.');
+        console.error('Error fetching history:', error);
       } else {
-        setHistory(data as EventHistory[]);
+        setHistory(data || []);
       }
       setLoading(false);
     };
 
     fetchHistory();
-  }, [isOpen, event?.id]);
+  }, [event.id]);
 
-  const filteredHistory = history.filter(h => h.remarks);
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ').replace('dean', 'Dean IR').toUpperCase();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Review History for: {event?.title}</DialogTitle>
+          <DialogTitle>Remarks History for: {event.title}</DialogTitle>
           <DialogDescription>
-            History of status changes and remarks from approvers.
+            Review the approval status changes and remarks provided by approvers.
           </DialogDescription>
         </DialogHeader>
         
-        {loading ? (
-          <div className="text-center py-8">Loading history...</div>
-        ) : filteredHistory.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No return or rejection remarks found for this event.
-          </div>
-        ) : (
-          <ScrollArea className="h-96 p-4 border rounded-md">
-            <div className="space-y-6">
-              {filteredHistory.map((item, index) => (
-                <div key={item.id} className="border-b pb-4 last:border-b-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-sm font-medium">
-                      {item.profiles?.first_name} {item.profiles?.last_name} 
-                      <Badge variant="secondary" className="ml-2 capitalize">{item.profiles?.role}</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {format(new Date(item.created_at), 'MMM dd, yyyy HH:mm')}
-                    </div>
+        <ScrollArea className="h-[400px] pr-4">
+          {loading ? (
+            <div className="text-center py-8">Loading history...</div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No history records found.</div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((record) => (
+                <div key={record.id} className="border-l-4 border-primary/50 pl-4 py-2 bg-accent/50 rounded-r-md">
+                  <div className="flex justify-between items-start">
+                    <p className="font-semibold text-sm">
+                      {roleDisplayMap[record.actor_role] || record.actor_role} ({record.actor_name})
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(record.created_at), 'MMM d, yyyy h:mm a')}
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center text-xs mb-2">
-                    <Badge variant="outline" className="capitalize">{statusMap[item.old_status] || item.old_status}</Badge>
-                    <ArrowRight className="h-3 w-3 mx-2 text-gray-500" />
-                    <Badge className="capitalize bg-primary text-primary-foreground">
-                      {statusMap[item.new_status] || item.new_status}
-                    </Badge>
-                  </div>
-
-                  <p className="text-sm mt-2 p-3 bg-muted rounded-md border">
-                    {item.remarks}
+                  <p className="text-sm mt-1">
+                    <span className="font-medium">Status Change:</span> {formatStatus(record.status)}
                   </p>
+                  {record.remarks && (
+                    <div className="mt-2 p-2 bg-background border rounded-md">
+                      <MessageSquare className="h-3 w-3 inline mr-1 text-primary" />
+                      <span className="text-sm italic">{record.remarks}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </ScrollArea>
-        )}
+          )}
+        </ScrollArea>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>Close</Button>

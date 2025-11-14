@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle, Download, FileText } from 'lucide-react';
-import EventDialog from '@/components/EventDialog';
-import EventCancelDialog from '@/components/EventCancelDialog';
-import EventReportDialog from '@/components/EventReportDialog';
-import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog'; // New Import
 import {
   Table,
   TableBody,
@@ -15,74 +9,59 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import { format, isPast } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import EventCalendar from '@/components/EventCalendar';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import EventDialog from '@/components/EventDialog';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { List, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
+import ReturnReasonDialog from '@/components/ReturnReasonDialog';
 
 const statusColors = {
-  pending_hod: 'bg-primary',
-  resubmitted: 'bg-indigo-500', // New color for resubmitted
-  returned_to_coordinator: 'bg-secondary',
-  pending_dean: 'bg-accent',
-  returned_to_hod: 'bg-muted',
-  pending_principal: 'bg-primary/80',
+  pending_hod: 'bg-yellow-500',
+  resubmitted: 'bg-indigo-500',
+  returned_to_coordinator: 'bg-red-500', // Highlight returned events
+  pending_dean: 'bg-yellow-600',
+  returned_to_hod: 'bg-orange-600',
+  pending_principal: 'bg-yellow-700',
+  returned_to_dean: 'bg-orange-700',
   approved: 'bg-green-500',
-  rejected: 'bg-destructive',
+  rejected: 'bg-red-700',
   cancelled: 'bg-gray-500',
 };
 
 const CoordinatorDashboard = () => {
   const { user } = useAuth();
-  const [myEvents, setMyEvents] = useState<any[]>([]);
-  const [approvedEvents, setApprovedEvents] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); 
-  const [isReportGeneratorOpen, setIsReportGeneratorOpen] = useState(false); // New state
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [isReturnReasonDialogOpen, setIsReturnReasonDialogOpen] = useState(false);
 
   const fetchEvents = async () => {
     if (!user) return;
     setLoading(true);
-
-    // Fetch user's events
-    const { data: myEventsData, error: myEventsError } = await supabase
+    
+    // RLS ensures only events submitted by the current user are returned
+    const { data, error } = await supabase
       .from('events')
       .select(`
-        *, 
-        venues(name),
+        *,
+        venues ( name ),
         submitted_by:profiles ( first_name, last_name )
       `)
-      .eq('submitted_by', user.id)
       .order('created_at', { ascending: false });
 
-    if (myEventsError) console.error('Error fetching my events:', myEventsError);
-    else {
-      const mappedData = myEventsData.map(event => ({
+    if (error) {
+      toast.error('Error fetching events.');
+      console.error('Error fetching events:', error);
+    } else {
+      const mappedData = data.map(event => ({
         ...event,
-        profiles: event.submitted_by, // Map submitted_by object to 'profiles' for consistency if needed elsewhere
+        profiles: event.submitted_by,
       }));
-      setMyEvents(mappedData);
+      setAllEvents(mappedData);
     }
-
-    // Fetch all approved events for the calendar
-    const { data: approvedEventsData, error: approvedEventsError } = await supabase
-      .from('events')
-      .select('*, venues(name)')
-      .eq('status', 'approved');
-
-    if (approvedEventsError) console.error('Error fetching approved events:', approvedEventsError);
-    else setApprovedEvents(approvedEventsData);
-
     setLoading(false);
   };
 
@@ -90,233 +69,159 @@ const CoordinatorDashboard = () => {
     fetchEvents();
   }, [user]);
 
-  const handleCreate = () => {
-    setSelectedEvent(null);
-    setDialogMode('create');
-    setIsDialogOpen(true);
-  };
-
-  const handleEdit = (event: any) => {
-    setSelectedEvent(event);
-    setDialogMode('edit');
-    setIsDialogOpen(true);
-  };
-  
-  const handleView = (event: any) => {
-    setSelectedEvent(event);
-    setDialogMode('view');
-    setIsDialogOpen(true);
-  };
-
-  const handleCancel = (event: any) => {
-    setSelectedEvent(event);
-    setIsCancelDialogOpen(true);
-  };
-  
-  const handleReport = (event: any) => {
-    setSelectedEvent(event);
-    setIsReportDialogOpen(true);
-  };
-  
-  const handleGenerate = (event: any) => {
-    setSelectedEvent(event);
-    setIsReportGeneratorOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setSelectedEvent(null);
-  };
-
-  const handleCancelDialogClose = () => {
-    setIsCancelDialogOpen(false);
-    setSelectedEvent(null);
-  };
-  
-  const handleReportDialogClose = () => {
-    setIsReportDialogOpen(false);
-    setSelectedEvent(null);
-  };
-  
-  const handleReportGeneratorClose = () => {
-    setIsReportGeneratorOpen(false);
-    setSelectedEvent(null);
-  };
-
-  // Make handleSuccess async and await fetchEvents to ensure the list is updated before proceeding.
-  const handleSuccess = async () => {
-    await fetchEvents();
-    handleDialogClose();
-  };
-  
-  const handleCancelSuccess = () => {
-    // Ensure state is cleared and events are fetched immediately
+  const handleSuccess = () => {
     fetchEvents();
-    handleCancelDialogClose();
+    setSelectedEvent(null);
   };
 
-  const isCancellable = (status: string) => {
-    // Allow cancellation if not already rejected or cancelled
-    return status !== 'rejected' && status !== 'cancelled';
+  const handleViewAction = (event: any) => {
+    const isReturned = event.status === 'returned_to_coordinator';
+    setSelectedEvent({ 
+      ...event, 
+      mode: isReturned ? 'edit' : 'view' 
+    });
   };
-  
-  const isEventOver = (event: any) => {
-    if (event.status !== 'approved') return false;
-    
-    const endDate = event.end_date || event.event_date;
-    const endTime = event.end_time; // HH:mm format
-    
-    if (!endDate || !endTime) return false;
 
-    try {
-      const [h, m] = endTime.split(':').map(Number);
-      const eventEndDateTime = new Date(endDate);
-      eventEndDateTime.setHours(h, m, 0, 0);
-      
-      return isPast(eventEndDateTime);
-    } catch (e) {
-      console.error("Error parsing event time:", e);
-      return false;
-    }
-  };
+  const pendingEvents = allEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
+  const returnedEvents = allEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
+  const approvedEvents = allEvents.filter(e => e.status === 'approved');
+
+  const renderEventTable = (eventsList: any[], title: string) => (
+    <Card className="bg-white rounded-lg shadow">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-background border-b">
+              <TableHead className="text-primary">Title</TableHead>
+              <TableHead className="text-primary">Dept/Club/Society</TableHead>
+              <TableHead className="text-primary">Venue</TableHead>
+              <TableHead className="text-primary">Date</TableHead>
+              <TableHead className="text-primary">Status</TableHead>
+              <TableHead className="text-primary text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+              </TableRow>
+            ) : eventsList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
+              </TableRow>
+            ) : (
+              eventsList.map((event: any) => {
+                const isReturned = event.status === 'returned_to_coordinator';
+                return (
+                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
+                    <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
+                    <TableCell>{event.department_club || 'N/A'}</TableCell>
+                    <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
+                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
+                        {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isReturned ? (
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleViewAction(event)}
+                          >
+                            Edit & Resubmit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setIsReturnReasonDialogOpen(true);
+                            }}
+                          >
+                            View Remarks
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleViewAction(event)}
+                        >
+                          View Details
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-primary">Coordinator Dashboard</h2>
-        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90">
-          <PlusCircle className="mr-2 h-4 w-4" /> Create Event
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold">Coordinator Dashboard</h2>
+        <Button onClick={() => setSelectedEvent({ mode: 'create' })}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Create New Event
         </Button>
       </div>
-
-      <EventDialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-        onSuccess={handleSuccess}
-        event={selectedEvent}
-        mode={dialogMode}
-      />
       
-      {selectedEvent && (
-        <>
-          <EventCancelDialog
-            isOpen={isCancelDialogOpen}
-            onClose={handleCancelDialogClose}
-            onCancelSuccess={handleCancelSuccess}
-            event={selectedEvent}
-          />
-          <EventReportDialog
-            isOpen={isReportDialogOpen}
-            onClose={handleReportDialogClose}
-            event={selectedEvent}
-          />
-          <EventReportGeneratorDialog
-            isOpen={isReportGeneratorOpen}
-            onClose={handleReportGeneratorClose}
-            event={selectedEvent}
-          />
-        </>
-      )}
-
-      <Tabs defaultValue="my-events">
+      <Tabs defaultValue="pending">
         <TabsList className="mb-4 bg-muted p-1 rounded-lg">
-          <TabsTrigger value="my-events" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <List className="w-4 h-4 mr-2" />
-            My Events
+          <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Pending Approval ({pendingEvents.length})
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Calendar className="w-4 h-4 mr-2" />
-            Approved Events Calendar
+          <TabsTrigger value="returned" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Returned/Rejected ({returnedEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="approved" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <List className="w-4 h-4 mr-2" />
+            Approved Events ({approvedEvents.length})
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="my-events">
-          <div className="bg-card rounded-lg shadow border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <TableHead className="text-primary-foreground font-semibold">Title</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">Venue</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">Date</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">Status</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
-                  </TableRow>
-                ) : myEvents.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">No events found.</TableCell>
-                  </TableRow>
-                ) : (
-                  myEvents.map((event) => {
-                    const isOver = isEventOver(event);
-                    return (
-                      <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                        <TableCell className="font-medium">{event.title}</TableCell>
-                        <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
-                        <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                        <TableCell>
-                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-primary-foreground`}>
-                            {event.status.replace(/_/g, ' ').toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleView(event)}>
-                                View
-                              </DropdownMenuItem>
-                              {event.status === 'returned_to_coordinator' && (
-                                <DropdownMenuItem onClick={() => handleEdit(event)}>
-                                  Edit
-                                </DropdownMenuItem>
-                              )}
-                              {event.status === 'approved' && (
-                                <DropdownMenuItem onClick={() => handleReport(event)}>
-                                  <Download className="mr-2 h-4 w-4" /> Download Approval Report
-                                </DropdownMenuItem>
-                              )}
-                              {event.status === 'approved' && isOver && (
-                                <DropdownMenuItem onClick={() => handleGenerate(event)}>
-                                  <FileText className="mr-2 h-4 w-4" /> Make Final Report
-                                </DropdownMenuItem>
-                              )}
-                              {isCancellable(event.status) && (
-                                <DropdownMenuItem 
-                                  onClick={() => handleCancel(event)}
-                                  className="text-red-600 focus:text-red-600"
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" /> Cancel Event
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+
+        <TabsContent value="pending">
+          {renderEventTable(pendingEvents, "Events Awaiting Approval")}
         </TabsContent>
-        <TabsContent value="calendar">
-          {loading ? (
-            <div className="text-center p-8">Loading calendar...</div>
-          ) : (
-            <EventCalendar events={approvedEvents} />
-          )}
+        
+        <TabsContent value="returned">
+          {renderEventTable(returnedEvents, "Events Returned for Correction or Rejected")}
+        </TabsContent>
+        
+        <TabsContent value="approved">
+          {renderEventTable(approvedEvents, "Approved Events")}
         </TabsContent>
       </Tabs>
+
+      {selectedEvent && (
+        <EventDialog
+          event={selectedEvent.id ? selectedEvent : null}
+          isOpen={!!selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onSuccess={handleSuccess}
+          mode={selectedEvent.mode as 'create' | 'edit' | 'view'}
+        />
+      )}
+      
+      {selectedEvent && isReturnReasonDialogOpen && (
+        <ReturnReasonDialog
+          isOpen={isReturnReasonDialogOpen}
+          onClose={() => setIsReturnReasonDialogOpen(false)}
+          event={selectedEvent}
+        />
+      )}
     </div>
   );
 };
