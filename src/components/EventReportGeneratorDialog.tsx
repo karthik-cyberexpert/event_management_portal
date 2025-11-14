@@ -40,10 +40,6 @@ import {
 const MAX_PHOTOS = 4;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 
-// !!! IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED EXTERNAL SERVERLESS FUNCTION URL !!!
-// Example: https://your-project-name.vercel.app/api/generate-report
-const EXTERNAL_AI_REPORT_ENDPOINT = 'https://YOUR_EXTERNAL_SERVERLESS_URL/generate-report';
-
 const ACTIVITY_LEAD_BY_OPTIONS = [
   'Institute Council',
   'Student Council',
@@ -183,21 +179,20 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       });
       const photoUrls = await Promise.all(photoUploadPromises);
 
-      // 2. Call External Serverless Function for AI Objective
-      const aiResponse = await fetch(EXTERNAL_AI_REPORT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: event.title, 
-          objective: event.objective, 
-          description: event.description 
-        }),
+      // 2. Call Supabase Edge Function for AI Objective
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
+        body: {
+          title: event.title,
+          objective: event.objective,
+          description: event.description,
+        },
       });
-      
-      const aiData = await aiResponse.json();
 
-      if (!aiResponse.ok || aiData.error) {
-        throw new Error(aiData.error || `AI service failed with status ${aiResponse.status}`);
+      if (aiError) {
+        throw new Error(`AI service failed: ${aiError.message}`);
+      }
+      if (aiData.error) {
+        throw new Error(`AI service returned an error: ${aiData.error}`);
       }
       aiObjective = aiData.objective;
 
