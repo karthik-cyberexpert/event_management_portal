@@ -1,97 +1,140 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { api } from '@/lib/api';
 
-export type Profile = {
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+interface Session {
+  user: User;
+}
+
+interface Profile {
   id: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal';
-  department: string | null;
-  club: string | null;
-  professional_society: string | null;
-};
+  role: string;
+  department?: string;
+  club?: string;
+  professional_society?: string;
+  department_id?: string;
+  club_id?: string;
+  professional_society_id?: string;
+  phone_number?: string;
+  email?: string;
+  department_name?: string;
+  club_name?: string;
+  society_name?: string;
+}
 
-type AuthContextType = {
-  session: Session | null;
+interface AuthContextType {
   user: User | null;
+  session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  isPasswordRecovery: boolean;
-  signOut: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  setAuthSession: (token: string, user: User) => void;
   refreshProfile: () => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  const fetchProfile = async (user: User | null) => {
-    if (user) {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        setProfile(null);
-      } else {
-        setProfile(profileData);
-      }
-    } else {
-      setProfile(null);
+  const fetchProfile = async (userId: string) => {
+    try {
+      const profileData = await api.auth.me();
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setIsPasswordRecovery(event === 'PASSWORD_RECOVERY');
-
-        // Fetch profile, but do not block the loading state.
-        // The UI will update once the profile is fetched.
-        fetchProfile(currentUser);
-
-        // Set loading to false as soon as the session is resolved.
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (token && storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setSession({ user: userData });
+          await fetchProfile(userData.id);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
         setLoading(false);
       }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
     };
+
+    initAuth();
   }, []);
 
+  const setAuthSession = (token: string, user: User) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    setUser(user);
+    setSession({ user });
+    fetchProfile(user.id);
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const { token, user: userData } = await api.auth.login(email, password);
+      setAuthSession(token, userData);
+    } catch (error: any) {
+      throw new Error(error.message || 'Login failed');
+    }
+  };
+
+  const signup = async (email: string, password: string) => {
+    try {
+      const { token, user: userData } = await api.auth.signup({ email, password });
+      setAuthSession(token, userData);
+    } catch (error: any) {
+      throw new Error(error.message || 'Signup failed');
+    }
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setSession(null);
+    setProfile(null);
   };
 
-  const refreshProfile = async () => {
-    await fetchProfile(user);
-  };
-
-  const value = {
-    session,
-    user,
-    profile,
-    loading,
-    isPasswordRecovery,
-    signOut,
-    refreshProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        login,
+        signup,
+        signOut,
+        setAuthSession,
+        refreshProfile: () => user ? fetchProfile(user.id) : Promise.resolve(),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

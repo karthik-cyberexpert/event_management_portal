@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,19 +52,15 @@ const ProfilePage = () => {
   const onSubmit = async (values: z.infer<typeof profileSchema>) => {
     if (!profile) return;
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        first_name: values.first_name,
-        last_name: values.last_name,
-      })
-      .eq('id', profile.id);
-
-    if (error) {
-      toast.error(`Failed to update profile: ${error.message}`);
-    } else {
+    try {
+      await api.auth.updateMe({
+        firstName: values.first_name,
+        lastName: values.last_name,
+      });
       toast.success('Profile updated successfully!');
       await refreshProfile();
+    } catch (error: any) {
+      toast.error(`Failed to update profile: ${error.message}`);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import {
   Table,
   TableBody,
@@ -22,11 +22,12 @@ import {
 import { format } from 'date-fns';
 import EventCalendar from '@/components/EventCalendar';
 import { List, Calendar, Search } from 'lucide-react';
-import EventLookup from '@/components/EventLookup';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import EventActionDialog from '@/components/EventActionDialog';
+import EventDialog from '@/components/EventDialog';
 import {
   Tooltip,
   TooltipContent,
@@ -52,37 +53,38 @@ const ALL_STATUSES = [
 
 const AllEvents = () => {
   const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'list';
   const [events, setEvents] = useState<any[]>([]);
   const [approvedEvents, setApprovedEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const fetchEvents = async () => {
     setLoading(true);
-    // RLS ensures only events relevant to the user's role are returned.
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        venues ( name, location ),
-        submitted_by:profiles ( first_name, last_name )
-      `)
-      .order('event_date', { ascending: true })
-      .order('start_time', { ascending: true });
-
-    if (error) {
-      toast.error('Failed to fetch events.');
-      console.error('Error fetching events:', error);
-    } else {
+    try {
+      const data = await api.events.list();
       const mappedData = data.map(event => ({
         ...event,
-        coordinator: event.submitted_by,
-        profiles: event.submitted_by, // Keep profiles for consistency with EventActionDialog
+        coordinator: event.profiles || event.submitted_by,
+        profiles: event.profiles || event.submitted_by,
       }));
       setEvents(mappedData);
       setApprovedEvents(mappedData.filter(e => e.status === 'approved'));
+    } catch (error: any) {
+      toast.error('Failed to fetch events.');
+      console.error('Error fetching events:', error);
     }
     setLoading(false);
   };
@@ -105,6 +107,11 @@ const AllEvents = () => {
     setSelectedEvent(null);
   };
 
+  const handleViewDetails = (event: any) => {
+    setSelectedEvent(event);
+    setIsViewDialogOpen(true);
+  };
+
   const isApprover = profile && ['hod', 'dean', 'principal'].includes(profile.role);
   const isReviewable = (event: any) => {
     if (!profile) return false;
@@ -121,10 +128,8 @@ const AllEvents = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold">Events Overview</h2>
-      
-      <EventLookup />
 
-      <Tabs defaultValue="list">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="list">
             <List className="w-4 h-4 mr-2" />
@@ -171,8 +176,8 @@ const AllEvents = () => {
                     <TableHead className="text-primary-foreground">Date</TableHead>
                     <TableHead className="text-primary-foreground">Venue</TableHead>
                     <TableHead className="text-primary-foreground">Status</TableHead>
-                    <TableHead className="text-primary-foreground">Dept/Club/Society</TableHead> {/* Updated Header */}
-                    {isApprover && <TableHead className="text-primary-foreground">Actions</TableHead>}
+                    <TableHead className="text-primary-foreground">Dept/Club/Society</TableHead>
+                    <TableHead className="text-primary-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -208,19 +213,17 @@ const AllEvents = () => {
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
-                        {isApprover && (
-                          <TableCell>
-                            {isReviewable(event) ? (
-                              <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
-                                Review
-                              </Button>
-                            ) : (
-                              <Button variant="ghost" size="sm" onClick={() => setSelectedEvent(event)} disabled={event.status === 'approved'}>
-                                View
-                              </Button>
-                            )}
-                          </TableCell>
-                        )}
+                        <TableCell className="text-right">
+                          {isReviewable(event) ? (
+                            <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
+                              Review
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={() => handleViewDetails(event)}>
+                              View
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -239,13 +242,26 @@ const AllEvents = () => {
         </TabsContent>
       </Tabs>
       
-      {selectedEvent && isApprover && (
+      {selectedEvent && isApprover && !isViewDialogOpen && (
         <EventActionDialog
           event={selectedEvent}
           isOpen={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onActionSuccess={handleActionSuccess}
           role={profile!.role as 'hod' | 'dean' | 'principal'}
+        />
+      )}
+
+      {selectedEvent && isViewDialogOpen && (
+        <EventDialog
+          event={selectedEvent}
+          isOpen={isViewDialogOpen}
+          onClose={() => {
+            setIsViewDialogOpen(false);
+            setSelectedEvent(null);
+          }}
+          onSuccess={handleActionSuccess}
+          mode="view"
         />
       )}
     </div>

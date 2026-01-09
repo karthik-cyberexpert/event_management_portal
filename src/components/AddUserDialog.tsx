@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -89,14 +89,18 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
 
   useEffect(() => {
     const fetchDropdownData = async () => {
-      const { data: depts, error: deptsError } = await supabase.from('departments').select('*');
-      if (deptsError) toast.error('Failed to fetch departments.'); else setDepartments(depts);
-
-      const { data: clubsData, error: clubsError } = await supabase.from('clubs').select('*');
-      if (clubsError) toast.error('Failed to fetch clubs.'); else setClubs(clubsData);
-
-      const { data: societiesData, error: societiesError } = await supabase.from('professional_societies').select('*');
-      if (societiesError) toast.error('Failed to fetch societies.'); else setSocieties(societiesData);
+      try {
+        const [depts, clubsData, societiesData] = await Promise.all([
+          api.departments.list(),
+          api.clubs.list(),
+          api.societies.list()
+        ]);
+        setDepartments(depts);
+        setClubs(clubsData);
+        setSocieties(societiesData);
+      } catch (error: any) {
+        toast.error('Failed to load dropdown data');
+      }
     };
     if (isOpen) {
       fetchDropdownData();
@@ -106,27 +110,20 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const submissionValues = {
-        ...values,
+        email: values.email,
+        password: values.password,
+        firstName: values.first_name,
+        lastName: values.last_name,
+        role: values.role,
         department: values.department === '--none--' ? null : values.department,
         club: values.club === '--none--' ? null : values.club,
-        professional_society: values.professional_society === '--none--' ? null : values.professional_society,
+        professionalSociety: values.professional_society === '--none--' ? null : values.professional_society,
       };
 
-      // The Edge Function now handles user creation with a password
-      const { data, error } = await supabase.functions.invoke('admin-create-users', {
-        body: submissionValues,
-      });
-
-      if (error) throw error;
-
-      const result = data.results[0];
-      if (result.success) {
-        toast.success(`User ${result.email} created successfully.`);
-        onSuccess();
-        onClose();
-      } else {
-        throw new Error(result.error);
-      }
+      await api.users.create(submissionValues);
+      toast.success('User created successfully.');
+      onSuccess();
+      onClose();
     } catch (error: any) {
       toast.error(`Failed to create user: ${error.message}`);
     }

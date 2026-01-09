@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
@@ -39,15 +39,11 @@ const ManageVenues = () => {
 
   const fetchVenues = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('venues')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
-      toast.error('Failed to fetch venues.');
-    } else {
+    try {
+      const data = await api.venues.list();
       setVenues(data);
+    } catch (error: any) {
+      toast.error('Failed to fetch venues.');
     }
     setLoading(false);
   };
@@ -67,12 +63,12 @@ const ManageVenues = () => {
   };
 
   const handleDelete = async (venueId: string) => {
-    const { error } = await supabase.from('venues').delete().eq('id', venueId);
-    if (error) {
-      toast.error(`Failed to delete venue: ${error.message}`);
-    } else {
+    try {
+      await api.venues.delete(venueId);
       toast.success('Venue deleted successfully.');
       fetchVenues();
+    } catch (error: any) {
+      toast.error(`Failed to delete venue: ${error.message}`);
     }
   };
 

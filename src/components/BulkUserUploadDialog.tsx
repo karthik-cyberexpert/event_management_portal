@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -85,13 +85,8 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
           throw new Error('The uploaded file is empty.');
         }
 
-        const { data: responseData, error } = await supabase.functions.invoke('admin-create-users', {
-          body: json,
-        });
-
-        if (error) throw error;
-
-        const results: UploadResult[] = responseData.results;
+        const result = await api.users.bulkCreate(json);
+        const results: UploadResult[] = result.results;
         const failedResults = results.filter((r) => !r.success);
         const successCount = results.length - failedResults.length;
 

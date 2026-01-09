@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -187,7 +187,8 @@ const formSchema = z.object({
   poster_url: z.string().optional(),
   
   // New field for coordinator's resubmission reason
-  coordinator_resubmission_reason: z.string().optional(), 
+  coordinator_resubmission_reason: z.string().optional(),
+  status: z.string().optional(),
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -368,11 +369,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
   useEffect(() => {
     const fetchVenues = async () => {
-      const { data, error } = await supabase.from('venues').select('id, name');
-      if (error) {
-        toast.error('Failed to fetch venues.');
-      } else {
+      try {
+        const data = await api.venues.list();
         setVenues(data);
+      } catch (error) {
+        toast.error('Failed to fetch venues.');
       }
     };
     fetchVenues();
@@ -402,7 +403,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         quarter: event.quarter || '',
         program_type: event.program_type || '',
         program_theme: event.program_theme || '',
-        end_date: event.end_date || '',
+        event_date: event.event_date ? format(new Date(event.event_date), 'yyyy-MM-dd') : '',
+        end_date: event.end_date ? format(new Date(event.end_date), 'yyyy-MM-dd') : '',
         expected_audience: event.expected_audience ?? null,
         budget_estimate: event.budget_estimate ?? null,
         category: parsedCategory.base,
@@ -446,26 +448,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   }, [event, form, profile]);
 
   const uploadPoster = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    const filePath = `${user!.id}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('event_posters')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      throw new Error(`Poster upload failed: ${uploadError.message}`);
+    try {
+      const result = await api.uploads.single(file);
+      return result.url;
+    } catch (error: any) {
+      throw new Error(`Poster upload failed: ${error.message}`);
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('event_posters')
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
   };
 
   const onSubmit = async (values: FormSchema) => {
@@ -537,57 +525,55 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         coordinator_resubmission_reason: values.coordinator_resubmission_reason || null,
       };
 
-      const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
-        p_venue_id: values.venue_id === 'other' ? null : values.venue_id,
-        p_start_date: values.event_date,
-        p_end_date: values.end_date || values.event_date,
-        p_start_time: values.start_time,
-        p_end_time: values.end_time,
-        p_event_id: isEditMode ? event.id : null,
-      });
+      try {
+        const { available } = await api.events.checkAvailability({
+          venueId: values.venue_id === 'other' ? null : values.venue_id,
+          startDate: values.event_date,
+          endDate: values.end_date || values.event_date,
+          startTime: values.start_time,
+          endTime: values.end_time,
+          eventId: isEditMode ? event.id : null,
+        });
 
-      if (checkError || (values.venue_id !== 'other' && !isAvailable)) {
-        toast.error('Venue is not available at the selected date and time.');
-        setIsSubmitting(false);
-        return;
+        if (!available) {
+          toast.error('Venue is not available at the selected date and time.');
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (checkError) {
+        console.error('Availability check failed:', checkError);
+        // Fallback or handle error
       }
 
-      let error;
       if (isEditMode) {
         // When resubmitting a returned event, set status to 'resubmitted' and reset approvals
-        let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
+        let newStatus = 'pending_hod';
         if (event.status === 'returned_to_coordinator') {
           newStatus = 'resubmitted';
         }
         
-        const { error: updateError } = await supabase.from('events').update({ 
+        await api.events.update(event.id, { 
           ...eventData, 
           status: newStatus, 
-          remarks: null, // Clear previous remarks upon resubmission
+          remarks: null,
           hod_approval_at: null,
           dean_approval_at: null,
           principal_approval_at: null,
-        }).eq('id', event.id);
-        error = updateError;
+        });
       } else {
-        // For new events, clear the resubmission reason
-        const { error: insertError } = await supabase.from('events').insert({ 
+        await api.events.create({ 
           ...eventData, 
           submitted_by: user.id,
           coordinator_resubmission_reason: null,
         });
-        error = insertError;
       }
 
-      if (error) {
-        toast.error(`Failed to save event: ${error.message}`);
-      } else {
-        toast.success(`Event ${isEditMode ? 'updated and resubmitted' : 'created'} successfully.`);
-        onSuccess();
-        onClose();
-      }
+      toast.success(`Event ${isEditMode ? 'updated and resubmitted' : 'created'} successfully.`);
+      onSuccess();
+      onClose();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message || 'An error occurred while saving the event.');
+      console.error(e);
     } finally {
       setIsSubmitting(false);
     }

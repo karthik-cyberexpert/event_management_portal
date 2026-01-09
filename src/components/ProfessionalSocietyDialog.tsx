@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -53,26 +53,18 @@ const ProfessionalSocietyDialog = ({ isOpen, onClose, onSuccess, society }: Prof
   }, [society, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    let error;
-    if (society) {
-      // Update existing society
-      const { error: updateError } = await supabase
-        .from('professional_societies')
-        .update(values)
-        .eq('id', society.id);
-      error = updateError;
-    } else {
-      // Create new society
-      const { error: insertError } = await supabase.from('professional_societies').insert(values);
-      error = insertError;
-    }
-
-    if (error) {
-      toast.error(`Failed to save society: ${error.message}`);
-    } else {
-      toast.success(`Society ${society ? 'updated' : 'created'} successfully.`);
+    try {
+      if (society) {
+        await api.societies.update(society.id, values);
+        toast.success('Society updated successfully.');
+      } else {
+        await api.societies.create(values);
+        toast.success('Society added successfully.');
+      }
       onSuccess();
       onClose();
+    } catch (error: any) {
+      toast.error(`Failed to save society: ${error.message}`);
     }
   };
 

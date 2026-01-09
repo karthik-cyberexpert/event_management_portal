@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -65,26 +65,18 @@ const VenueDialog = ({ isOpen, onClose, onSuccess, venue }: VenueDialogProps) =>
   }, [venue, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    let error;
-    if (venue) {
-      // Update existing venue
-      const { error: updateError } = await supabase
-        .from('venues')
-        .update(values)
-        .eq('id', venue.id);
-      error = updateError;
-    } else {
-      // Create new venue
-      const { error: insertError } = await supabase.from('venues').insert(values);
-      error = insertError;
-    }
-
-    if (error) {
-      toast.error(`Failed to save venue: ${error.message}`);
-    } else {
-      toast.success(`Venue ${venue ? 'updated' : 'created'} successfully.`);
+    try {
+      if (venue) {
+        await api.venues.update(venue.id, values);
+        toast.success('Venue updated successfully.');
+      } else {
+        await api.venues.create(values);
+        toast.success('Venue added successfully.');
+      }
       onSuccess();
       onClose();
+    } catch (error: any) {
+      toast.error(`Failed to save venue: ${error.message}`);
     }
   };
 

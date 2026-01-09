@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -155,7 +155,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
                 </div>
               ) : null
             } />
-            <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
+            <ReportRow label="Budget Estimate" value={`₹${Number(data.budget_estimate || 0).toFixed(2)}`} />
             <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
             <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
             <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
@@ -178,16 +178,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     if (!event) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select(`
-          *,
-          venues ( name, location )
-        `)
-        .eq('id', event.id)
-        .single();
-
-      if (error) throw error;
+      const data = await api.events.get(event.id);
       setReportData(data);
     } catch (error: any) {
       toast.error(`Failed to load report data: ${error.message}`);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
@@ -52,42 +52,21 @@ const ManageDepartments = () => {
   const fetchDepartments = async () => {
     setLoading(true);
     
-    const { data: departmentsData, error: departmentsError } = await supabase
-      .from('departments')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      const departmentsData = await api.departments.list();
+      const profilesData = await api.users.list();
 
-    if (departmentsError) {
+      const departmentsWithDetails = departmentsData.map(dept => {
+        const departmentIdentifier = `${dept.name} (${dept.degree})`;
+        const hod = profilesData.find(p => p.role === 'hod' && p.department === departmentIdentifier) || null;
+        const coordinators = profilesData.filter(p => p.role === 'coordinator' && p.department === departmentIdentifier);
+        return { ...dept, hod, coordinators };
+      });
+
+      setDepartments(departmentsWithDetails);
+    } catch (error: any) {
       toast.error('Failed to fetch departments.');
-      setLoading(false);
-      return;
     }
-
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, role, department')
-      .in('role', ['hod', 'coordinator']);
-
-    if (profilesError) {
-      toast.error('Failed to fetch user roles.');
-      setLoading(false);
-      return;
-    }
-
-    const departmentsWithDetails = departmentsData.map(dept => {
-      const departmentIdentifier = `${dept.name} (${dept.degree})`;
-
-      const hod = profilesData.find(p => p.role === 'hod' && p.department === departmentIdentifier) || null;
-      const coordinators = profilesData.filter(p => p.role === 'coordinator' && p.department === departmentIdentifier);
-
-      return {
-        ...dept,
-        hod,
-        coordinators,
-      };
-    });
-
-    setDepartments(departmentsWithDetails);
     setLoading(false);
   };
 
@@ -106,12 +85,12 @@ const ManageDepartments = () => {
   };
 
   const handleDelete = async (departmentId: string) => {
-    const { error } = await supabase.from('departments').delete().eq('id', departmentId);
-    if (error) {
-      toast.error(`Failed to delete department: ${error.message}`);
-    } else {
+    try {
+      await api.departments.delete(departmentId);
       toast.success('Department deleted successfully.');
       fetchDepartments();
+    } catch (error: any) {
+      toast.error(`Failed to delete department: ${error.message}`);
     }
   };
 

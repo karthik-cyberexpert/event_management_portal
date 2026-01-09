@@ -2,117 +2,111 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate, useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-const Login = () => {
-  const { session } = useAuth();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+type LoginFormValues = z.infer<typeof loginSchema>;
 
-  const form = useForm<z.infer<typeof loginSchema>>({
+export default function Login() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
   });
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message || 'Invalid login credentials.');
-    } else {
-      toast.success('Signed in successfully!');
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsLoading(true);
+    try {
+      await login(data.email, data.password);
+      
+      toast({
+        title: 'Login successful',
+        description: 'Welcome back!',
+      });
+      
       navigate('/');
+    } catch (error: any) {
+      toast({
+        title: 'Login failed',
+        description: error.message || 'Invalid credentials',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (session) {
-    return <Navigate to="/" replace />;
-  }
-
   return (
-    <div className="flex justify-center items-center min-h-screen bg-muted">
-      <Card className="w-full max-w-md border-border shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Event Platform Login</CardTitle>
-          <CardDescription>Enter your credentials to sign in</CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Event Management System</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
+                {...register('email')}
+                disabled={isLoading}
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                {...register('password')}
+                disabled={isLoading}
               />
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
-              </Button>
-              <div className="mt-4 text-center text-sm">
-                <Link to="/forgot-password" className="text-primary hover:underline">
-                  Forgot your password?
-                </Link>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </Button>
+            <div className="text-sm text-center text-gray-600">
+              <a href="/forgot-password" className="text-blue-600 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   );
-};
-
-export default Login;
+}

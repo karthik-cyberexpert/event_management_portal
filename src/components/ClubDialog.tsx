@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -53,26 +53,18 @@ const ClubDialog = ({ isOpen, onClose, onSuccess, club }: ClubDialogProps) => {
   }, [club, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    let error;
-    if (club) {
-      // Update existing club
-      const { error: updateError } = await supabase
-        .from('clubs')
-        .update(values)
-        .eq('id', club.id);
-      error = updateError;
-    } else {
-      // Create new club
-      const { error: insertError } = await supabase.from('clubs').insert(values);
-      error = insertError;
-    }
-
-    if (error) {
-      toast.error(`Failed to save club: ${error.message}`);
-    } else {
-      toast.success(`Club ${club ? 'updated' : 'created'} successfully.`);
+    try {
+      if (club) {
+        await api.clubs.update(club.id, values);
+        toast.success('Club updated successfully.');
+      } else {
+        await api.clubs.create(values);
+        toast.success('Club added successfully.');
+      }
       onSuccess();
       onClose();
+    } catch (error: any) {
+      toast.error(`Failed to save club: ${error.message}`);
     }
   };
 

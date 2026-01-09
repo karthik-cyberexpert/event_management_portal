@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -41,17 +41,17 @@ type EventActionDialogProps = {
   role: 'hod' | 'dean' | 'principal';
 };
 
-const roleActions = {
+const roleActions: Record<string, any> = {
   hod: {
-    approve: { label: 'Approve & Forward to Dean IR', status: 'pending_dean', timestampField: 'hod_approval_at' },
+    approve: { label: 'Approve & Forward to Dean IR', status: 'pending_dean' },
     return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
   dean: {
-    approve: { label: 'Approve & Forward to Principal', status: 'pending_principal', timestampField: 'dean_approval_at' },
+    approve: { label: 'Approve & Forward to Principal', status: 'pending_principal' },
     return: { label: 'Return to HOD', status: 'returned_to_hod' },
   },
   principal: {
-    approve: { label: 'Approve Event', status: 'approved', timestampField: 'principal_approval_at' },
+    approve: { label: 'Approve Event', status: 'approved' },
     reject: { label: 'Reject', status: 'rejected' },
     return: { label: 'Return to Dean IR', status: 'returned_to_dean' },
   },
@@ -99,20 +99,15 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
     setIsSubmitting(true);
     
-    const { error } = await supabase.rpc('update_event_status', {
-      p_event_id: event.id,
-      p_new_status: action.status,
-      p_new_remarks: remarks || null,
-      p_approval_timestamp_field: action.timestampField || null,
-    });
-
-    if (error) {
-      toast.error(`Failed to update event: ${error.message}`);
-    } else {
+    try {
+      await api.events.updateStatus(event.id, action.status, remarks || undefined);
       toast.success('Event status updated successfully.');
       onActionSuccess();
+    } catch (error: any) {
+      toast.error(`Failed to update event: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const formatArray = (arr: string[] | null | undefined) => {
@@ -228,7 +223,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
                 <strong>Speakers/Resource Persons:</strong>
                 {renderSpeakers()}
               </div>
-              <div><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</div>
+              <div><strong>Budget Estimate:</strong> ₹{Number(event.budget_estimate || 0).toFixed(2)}</div>
               <div><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</div>
               <div className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</div>
             </div>
@@ -271,7 +266,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
           <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
             <div className="flex gap-2">
-              {role === 'principal' && (
+              {role === 'principal' && actions.reject && (
                 <Button
                   variant="destructive"
                   onClick={() => handleAction('reject')}

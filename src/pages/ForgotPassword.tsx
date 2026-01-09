@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+// TODO: Replace with API client - import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,35 +21,35 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { api } from '@/lib/api';
 
-const forgotPasswordSchema = z.object({
+const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
 });
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
 
-  const form = useForm<z.infer<typeof forgotPasswordSchema>>({
-    resolver: zodResolver(forgotPasswordSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof forgotPasswordSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/update-password`,
-    });
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message || 'Failed to send password reset email.');
-    } else {
-      toast.success('Password reset link sent to your email.');
+    try {
+      await api.auth.resetPassword(values.email);
+      toast.success('Check your email for password reset instructions.');
       setMessageSent(true);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email.');
+    } finally {
+      setLoading(false);
     }
   };
 

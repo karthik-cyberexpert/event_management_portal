@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
@@ -49,38 +49,19 @@ const ManageClubs = () => {
   const fetchClubs = async () => {
     setLoading(true);
     
-    const { data: clubsData, error: clubsError } = await supabase
-      .from('clubs')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      const clubsData = await api.clubs.list();
+      const profilesData = await api.users.list();
 
-    if (clubsError) {
+      const clubsWithDetails = clubsData.map(club => {
+        const coordinators = profilesData.filter(p => p.club === club.name);
+        return { ...club, coordinators };
+      });
+
+      setClubs(clubsWithDetails);
+    } catch (error: any) {
       toast.error('Failed to fetch clubs.');
-      setLoading(false);
-      return;
     }
-    
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, role, club')
-      .eq('role', 'coordinator');
-
-    if (profilesError) {
-      toast.error('Failed to fetch coordinator roles.');
-      setLoading(false);
-      return;
-    }
-
-    const clubsWithDetails = clubsData.map(club => {
-      const coordinators = profilesData.filter(p => p.club === club.name);
-
-      return {
-        ...club,
-        coordinators,
-      };
-    });
-
-    setClubs(clubsWithDetails);
     setLoading(false);
   };
 
@@ -99,12 +80,12 @@ const ManageClubs = () => {
   };
 
   const handleDelete = async (clubId: string) => {
-    const { error } = await supabase.from('clubs').delete().eq('id', clubId);
-    if (error) {
-      toast.error(`Failed to delete club: ${error.message}`);
-    } else {
+    try {
+      await api.clubs.delete(clubId);
       toast.success('Club deleted successfully.');
       fetchClubs();
+    } catch (error: any) {
+      toast.error(`Failed to delete club: ${error.message}`);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Edit, PlusCircle, Upload } from 'lucide-react';
 import {
@@ -50,8 +50,7 @@ const ManageUsers = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('admin-fetch-users');
-      if (error) throw error;
+      const data = await api.users.list();
       setUsers(data as UserWithEmail[]);
     } catch (error: any) {
       toast.error(`Failed to fetch users: ${error.message}`);

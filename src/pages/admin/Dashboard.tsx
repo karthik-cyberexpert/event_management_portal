@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Calendar, 
   Users, 
-  Building, 
+  MapPin, 
   ClipboardList, 
-  TrendingUp, 
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Building,
+  List
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import EventLookup from "@/components/EventLookup";
 
 const statusConfig: { [key: string]: { icon: React.ElementType; color: string; label: string } } = {
   approved: { icon: CheckCircle, color: "bg-green-100 text-green-800", label: "Approved" },
@@ -24,9 +24,9 @@ const statusConfig: { [key: string]: { icon: React.ElementType; color: string; l
   pending_dean: { icon: Clock, color: "bg-yellow-100 text-yellow-800", label: "Pending Dean" },
   pending_principal: { icon: Clock, color: "bg-yellow-100 text-yellow-800", label: "Pending Principal" },
   rejected: { icon: XCircle, color: "bg-red-100 text-red-800", label: "Rejected" },
-  returned_to_coordinator: { icon: AlertCircle, color: "bg-orange-100 text-orange-800", label: "Returned" },
-  returned_to_hod: { icon: AlertCircle, color: "bg-orange-100 text-orange-800", label: "Returned" },
-  returned_to_dean: { icon: AlertCircle, color: "bg-orange-100 text-orange-800", label: "Returned" },
+  cancelled: { icon: XCircle, color: "bg-gray-100 text-gray-800", label: "Cancelled" },
+  returned_to_hod: { icon: AlertCircle, color: "bg-orange-100 text-orange-800", label: "Returned to HOD" },
+  returned_to_dean: { icon: AlertCircle, color: "bg-orange-100 text-orange-800", label: "Returned to Dean" },
 };
 
 const AdminDashboard = () => {
@@ -43,35 +43,32 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [eventsCount, usersCount, venuesCount, pendingCount, recentEventsData] = await Promise.all([
-          supabase.from('events').select('*', { count: 'exact', head: true }),
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
-          supabase.from('venues').select('*', { count: 'exact', head: true }),
-          supabase.from('events').select('*', { count: 'exact', head: true }).in('status', ['pending_hod', 'pending_dean', 'pending_principal', 'returned_to_hod', 'returned_to_dean']),
-          supabase.from('events').select('id, title, created_at, status').order('created_at', { ascending: false }).limit(4)
+        const [events, profiles, venues] = await Promise.all([
+          api.events.list(),
+          api.users.list(),
+          api.venues.list()
         ]);
 
-        if (eventsCount.error || usersCount.error || venuesCount.error || pendingCount.error || recentEventsData.error) {
-          console.error('Dashboard fetch errors:', {
-            eventsCount: eventsCount.error,
-            usersCount: usersCount.error,
-            venuesCount: venuesCount.error,
-            pendingCount: pendingCount.error,
-            recentEventsData: recentEventsData.error,
-          });
-          throw new Error('Failed to fetch dashboard data.');
-        }
+        const pendingEvents = events.filter((e: any) => 
+          ['pending_hod', 'pending_dean', 'pending_principal', 'returned_to_hod', 'returned_to_dean'].includes(e.status)
+        );
 
         setStats({
-          totalEvents: eventsCount.count ?? 0,
-          totalUsers: usersCount.count ?? 0,
-          totalVenues: venuesCount.count ?? 0,
-          pendingApprovals: pendingCount.count ?? 0,
+          totalEvents: events.length,
+          totalUsers: profiles.length,
+          totalVenues: venues.length,
+          pendingApprovals: pendingEvents.length,
         });
-        setRecentEvents(recentEventsData.data || []);
 
+        // Get 4 most recent events
+        const sortedEvents = events
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 4);
+        
+        setRecentEvents(sortedEvents);
       } catch (error: any) {
-        toast.error(error.message || 'Could not load dashboard data.');
+        console.error('Dashboard fetch error:', error);
+        toast.error('Failed to fetch dashboard data.');
       } finally {
         setLoading(false);
       }
@@ -178,9 +175,6 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Event Lookup */}
-        <EventLookup />
       </div>
     </div>
   );

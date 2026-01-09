@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -62,26 +62,18 @@ const DepartmentDialog = ({ isOpen, onClose, onSuccess, department }: Department
   }, [department, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    let error;
-    if (department) {
-      // Update existing department
-      const { error: updateError } = await supabase
-        .from('departments')
-        .update(values)
-        .eq('id', department.id);
-      error = updateError;
-    } else {
-      // Create new department
-      const { error: insertError } = await supabase.from('departments').insert(values);
-      error = insertError;
-    }
-
-    if (error) {
-      toast.error(`Failed to save department: ${error.message}`);
-    } else {
-      toast.success(`Department ${department ? 'updated' : 'created'} successfully.`);
+    try {
+      if (department) {
+        await api.departments.update(department.id, values);
+        toast.success('Department updated successfully.');
+      } else {
+        await api.departments.create(values);
+        toast.success('Department added successfully.');
+      }
       onSuccess();
       onClose();
+    } catch (error: any) {
+      toast.error(`Failed to save department: ${error.message}`);
     }
   };
 

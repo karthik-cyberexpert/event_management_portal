@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -15,17 +15,15 @@ import { ScrollArea } from './ui/scroll-area';
 import { MessageSquare } from 'lucide-react';
 
 type EventHistory = {
-  id: string; // Changed from number to string/uuid
+  id: string;
   event_id: string;
   old_status: string | null;
   new_status: string;
   remarks: string | null;
   created_at: string;
-  profiles: {
-    role: string;
-    first_name: string;
-    last_name: string;
-  } | null;
+  role: string;
+  first_name: string;
+  last_name: string;
 };
 
 type ReturnReasonDialogProps = {
@@ -51,28 +49,15 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
 
     const fetchHistory = async () => {
       setLoading(true);
-      // Fetch history records for the event, ordered by creation time
-      const { data, error } = await supabase
-        .from('event_history')
-        .select(`
-          id,
-          event_id,
-          old_status,
-          new_status,
-          remarks,
-          created_at,
-          profiles ( role, first_name, last_name )
-        `)
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
+      try {
+        const data = await api.events.getHistory(event.id);
+        setHistory(data || []);
+      } catch (error: any) {
         toast.error('Failed to fetch event history.');
         console.error('Error fetching history:', error);
-      } else {
-        setHistory(data as EventHistory[] || []);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchHistory();
@@ -83,15 +68,14 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
   };
   
   const getActorName = (record: EventHistory) => {
-    if (record.profiles) {
-      return `${record.profiles.first_name} ${record.profiles.last_name}`;
+    if (record.first_name || record.last_name) {
+      return `${record.first_name || ''} ${record.last_name || ''}`.trim();
     }
-    // Fallback for system actions where profiles might be null
     return 'System/Unknown';
   };
   
   const getActorRole = (record: EventHistory) => {
-    const role = record.profiles?.role || 'admin'; // Default to admin if profile is missing (e.g., system trigger)
+    const role = record.role || 'admin';
     return roleDisplayMap[role] || role;
   };
 

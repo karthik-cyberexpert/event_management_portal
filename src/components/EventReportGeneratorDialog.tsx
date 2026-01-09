@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,9 +22,9 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, Loader2, Image, Users, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { format, isPast, differenceInHours, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -166,38 +166,18 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const handleGenerateReport = async (formData: ReportFormData) => {
     setIsGenerating(true);
     
-    let aiObjective = '';
-
     try {
-      // 1. Upload Photos to Supabase Storage
-      const photoUploadPromises = formData.photos.map(async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${event.id}_report_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const { data, error } = await supabase.storage.from('event_reports').upload(fileName, file);
-        if (error) throw new Error(`Photo upload failed: ${error.message}`);
-        return supabase.storage.from('event_reports').getPublicUrl(data.path).data.publicUrl;
-      });
-      const photoUrls = await Promise.all(photoUploadPromises);
+      // 1. Upload Photos to Backend
+      const uploadResult = await api.uploads.multiple(formData.photos);
+      const photoUrls = uploadResult.urls;
 
-      // 2. Call Supabase Edge Function for AI Objective (Fix for 415/500 errors)
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
-        body: JSON.stringify({
-          title: event.title,
-          objective: event.objective,
-          description: event.description,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // 2. Call AI Service for Objective
+      const aiResult = await api.ai.generateObjective({
+        title: event.title,
+        objective: event.objective,
+        description: event.description,
       });
-
-      if (aiError) {
-        throw new Error(`AI service failed: ${aiError.message}`);
-      }
-      if (aiData.error) {
-        throw new Error(`AI service returned an error: ${aiData.error}`);
-      }
-      aiObjective = aiData.objective;
+      const aiObjective = aiResult.objective;
 
       // 3. Prepare Social Media Links
       const social_media_links: { [key: string]: string } = {};
@@ -207,25 +187,22 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       if (formData.linkedin_url) social_media_links.linkedin = formData.linkedin_url;
 
       // 4. Update Event Record in DB
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({
-          student_participants: formData.student_participants,
-          faculty_participants: formData.faculty_participants,
-          external_participants: formData.external_participants,
-          activity_lead_by: formData.activity_lead_by,
-          activity_duration_hours: durationHours, // Use calculated duration
-          final_report_remarks: formData.final_report_remarks,
-          report_photo_urls: photoUrls,
-          social_media_links,
-        })
-        .eq('id', event.id);
-      if (updateError) throw updateError;
+      await api.events.update(event.id, {
+        student_participants: formData.student_participants,
+        faculty_participants: formData.faculty_participants,
+        external_participants: formData.external_participants,
+        activity_lead_by: formData.activity_lead_by,
+        activity_duration_hours: durationHours,
+        final_report_remarks: formData.final_report_remarks,
+        report_photo_urls: photoUrls,
+        social_media_links,
+      });
 
       setReportData({ aiObjective, photoUrls, formData, durationHours });
       setStep(2);
     } catch (e: any) {
       toast.error(`Report generation failed: ${e.message}`);
+      console.error(e);
     } finally {
       setIsGenerating(false);
     }

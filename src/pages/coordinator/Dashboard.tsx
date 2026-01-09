@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Table,
@@ -11,37 +10,47 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  PlusCircle,
+  ShieldCheck,
+  AlertCircle,
+  List,
+  MoreHorizontal,
+  Download,
+  CalendarDays
+} from 'lucide-react';
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, ShieldCheck, XCircle, AlertCircle, PlusCircle, MoreHorizontal, Download } from 'lucide-react';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog'; // New Import
+import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog';
+import { api } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
+import { Calendar as MiniCalendar } from '@/components/ui/calendar';
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
-  resubmitted: 'bg-indigo-500',
-  returned_to_coordinator: 'bg-red-500', // Highlight returned events
-  pending_dean: 'bg-yellow-600',
-  returned_to_hod: 'bg-orange-600',
-  pending_principal: 'bg-yellow-700',
-  returned_to_dean: 'bg-orange-700',
+  pending_dean: 'bg-yellow-500',
+  pending_principal: 'bg-yellow-500',
   approved: 'bg-green-500',
-  rejected: 'bg-red-700',
+  rejected: 'bg-red-500',
+  returned_to_hod: 'bg-orange-500',
+  returned_to_dean: 'bg-orange-500',
   cancelled: 'bg-gray-500',
 };
 
 const CoordinatorDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
@@ -52,27 +61,15 @@ const CoordinatorDashboard = () => {
     if (!user) return;
     setLoading(true);
     
-    // RLS ensures only events submitted by the current user are returned
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        venues ( name ),
-        submitted_by:profiles ( first_name, last_name )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const data = await api.events.list();
+      setAllEvents(data);
+    } catch (error: any) {
       toast.error('Error fetching events.');
       console.error('Error fetching events:', error);
-    } else {
-      const mappedData = data.map(event => ({
-        ...event,
-        profiles: event.submitted_by,
-      }));
-      setAllEvents(mappedData);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -97,16 +94,18 @@ const CoordinatorDashboard = () => {
     setIsReportGeneratorOpen(true);
   };
 
-  const pendingEvents = allEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
-  const returnedEvents = allEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
-  const approvedEvents = allEvents.filter(e => e.status === 'approved');
+  const myEvents = allEvents.filter(e => e.submitted_by === user.id);
+  const pendingEvents = myEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
+  const returnedEvents = myEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
+  const approvedEvents = myEvents.filter(e => e.status === 'approved');
+  const eventDays = allEvents.map(e => new Date(e.event_date));
 
   const renderEventTable = (eventsList: any[], title: string) => (
-    <Card className="bg-white rounded-lg shadow">
+    <Card className="bg-white rounded-lg shadow h-full flex flex-col">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 overflow-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-background border-b">
@@ -138,7 +137,7 @@ const CoordinatorDashboard = () => {
                     <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                     <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                     <TableCell>
-                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
+                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize text-[10px]`}>
                         {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
                       </Badge>
                     </TableCell>
@@ -191,7 +190,7 @@ const CoordinatorDashboard = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">Coordinator Dashboard</h2>
         <Button onClick={() => setSelectedEvent({ mode: 'create' })}>
@@ -199,39 +198,79 @@ const CoordinatorDashboard = () => {
         </Button>
       </div>
       
-      <Tabs defaultValue="pending">
-        <TabsList className="mb-4 bg-muted p-1 rounded-lg">
-          <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <ShieldCheck className="w-4 h-4 mr-2" />
-            Pending Approval ({pendingEvents.length})
-          </TabsTrigger>
-          <TabsTrigger value="returned" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Returned/Rejected ({returnedEvents.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <List className="w-4 h-4 mr-2" />
-            Approved Events ({approvedEvents.length})
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
+          <Tabs defaultValue="pending">
+            <TabsList className="mb-4 bg-muted p-1 rounded-lg">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
+                <ShieldCheck className="w-4 h-4 mr-2 hidden sm:inline" />
+                Pending ({pendingEvents.length})
+              </TabsTrigger>
+              <TabsTrigger value="returned" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
+                <AlertCircle className="w-4 h-4 mr-2 hidden sm:inline" />
+                Returned ({returnedEvents.length})
+              </TabsTrigger>
+              <TabsTrigger value="approved" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
+                <List className="w-4 h-4 mr-2 hidden sm:inline" />
+                Approved ({approvedEvents.length})
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="pending">
-          {renderEventTable(pendingEvents, "Events Awaiting Approval")}
-        </TabsContent>
-        
-        <TabsContent value="returned">
-          {renderEventTable(returnedEvents, "Events Returned for Correction or Rejected")}
-        </TabsContent>
-        
-        <TabsContent value="approved">
-          {renderEventTable(approvedEvents, "Approved Events")}
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="pending" className="h-[500px]">
+              {renderEventTable(pendingEvents, "Awaiting Approval")}
+            </TabsContent>
+            
+            <TabsContent value="returned" className="h-[500px]">
+              {renderEventTable(returnedEvents, "Returned or Rejected")}
+            </TabsContent>
+            
+            <TabsContent value="approved" className="h-[500px]">
+              {renderEventTable(approvedEvents, "Approved Events")}
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="lg:col-span-1">
+          <Card className="sticky top-6 shadow-sm border-primary/10">
+            <CardHeader className="pb-3 text-center border-b bg-muted/30">
+              <CardTitle className="text-lg flex items-center justify-center gap-2 text-primary">
+                <CalendarDays className="h-5 w-5" />
+                Mini Calendar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex flex-col items-center">
+              <div 
+                className="cursor-pointer rounded-xl transition-all border-2 border-transparent p-3 w-full flex flex-col items-center group"
+                onClick={() => navigate('/all-events?tab=calendar')}
+              >
+                <div className="bg-white rounded-lg p-1 shadow-sm border border-border/50">
+                  <MiniCalendar
+                    mode="single"
+                    selected={new Date()}
+                    className="pointer-events-none"
+                    modifiers={{
+                      event: eventDays
+                    }}
+                    modifiersStyles={{
+                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '4px' }
+                    }}
+                  />
+                </div>
+                <div className="mt-4 w-full">
+                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                    View Full Approved Calendar
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {selectedEvent && selectedEvent.mode && (
         <EventDialog
           event={selectedEvent.id ? selectedEvent : null}
-          isOpen={!!selectedEvent}
+          isOpen={!!selectedEvent && !isReturnReasonDialogOpen && !isReportGeneratorOpen}
           onClose={() => setSelectedEvent(null)}
           onSuccess={handleSuccess}
           mode={selectedEvent.mode as 'create' | 'edit' | 'view'}

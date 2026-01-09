@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
@@ -49,38 +49,19 @@ const ManageProfessionalSocieties = () => {
   const fetchSocieties = async () => {
     setLoading(true);
     
-    const { data: societiesData, error: societiesError } = await supabase
-      .from('professional_societies')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      const societiesData = await api.societies.list();
+      const profilesData = await api.users.list();
 
-    if (societiesError) {
-      toast.error('Failed to fetch professional societies.');
-      setLoading(false);
-      return;
+      const societiesWithDetails = societiesData.map(society => {
+        const coordinators = profilesData.filter(p => p.professional_society === society.name);
+        return { ...society, coordinators };
+      });
+
+      setSocieties(societiesWithDetails);
+    } catch (error: any) {
+      toast.error('Failed to fetch societies.');
     }
-    
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, role, professional_society')
-      .eq('role', 'coordinator');
-
-    if (profilesError) {
-      toast.error('Failed to fetch coordinator roles.');
-      setLoading(false);
-      return;
-    }
-
-    const societiesWithDetails = societiesData.map(society => {
-      const coordinators = profilesData.filter(p => p.professional_society === society.name);
-
-      return {
-        ...society,
-        coordinators,
-      };
-    });
-
-    setSocieties(societiesWithDetails);
     setLoading(false);
   };
 
@@ -99,12 +80,12 @@ const ManageProfessionalSocieties = () => {
   };
 
   const handleDelete = async (societyId: string) => {
-    const { error } = await supabase.from('professional_societies').delete().eq('id', societyId);
-    if (error) {
-      toast.error(`Failed to delete society: ${error.message}`);
-    } else {
+    try {
+      await api.societies.delete(societyId);
       toast.success('Professional society deleted successfully.');
       fetchSocieties();
+    } catch (error: any) {
+      toast.error(`Failed to delete society: ${error.message}`);
     }
   };
 

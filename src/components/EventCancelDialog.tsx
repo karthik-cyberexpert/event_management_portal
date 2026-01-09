@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -46,20 +46,10 @@ const EventCancelDialog = ({ event, isOpen, onClose, onCancelSuccess }: EventCan
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('coordinator-cancel-event', {
-        body: {
-          event_id: event.id,
-          cancellation_reason: values.cancellation_reason,
-        },
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
+      await api.events.updateStatus(event.id, 'cancelled', values.cancellation_reason);
       toast.success(`Event "${event.title}" has been successfully canceled.`);
       onCancelSuccess();
     } catch (error: any) {
-      // Display the specific error message returned by the Edge Function
       toast.error(`Cancellation failed: ${error.message}`);
     } finally {
       setIsSubmitting(false);

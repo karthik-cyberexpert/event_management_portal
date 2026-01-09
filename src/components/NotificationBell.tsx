@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -9,8 +8,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { api } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
+import { ScrollArea } from './ui/scroll-area';
 
 type Notification = {
   id: string;
@@ -32,138 +32,70 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
 
   const fetchNotifications = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
+    try {
+      const data = await api.notifications.list();
+      setNotifications(data);
+      setUnreadCount(data.filter((n: Notification) => !n.is_read).length);
+    } catch (error) {
       console.error('Error fetching notifications:', error);
-    } else {
-      setNotifications(data as Notification[]);
-      setUnreadCount(data.filter(n => !n.is_read).length);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-
-      const channel = supabase
-        .channel('realtime-notifications')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-          () => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Polling every 30s
+    return () => clearInterval(interval);
   }, [user]);
 
-  const handleMarkAllAsRead = async () => {
-    if (!user) return;
-    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-    if (unreadIds.length === 0) return;
-
-    // Optimistic UI update
-    setNotifications(notifications.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .in('id', unreadIds);
-
-    if (error) {
-      console.error('Failed to mark all as read:', error);
-      // Re-fetch on error to restore correct state
-      fetchNotifications();
-    }
-  };
-
-  const handlePopoverOpenChange = (open: boolean) => {
-    setIsPopoverOpen(open);
-    // We will rely on the explicit button click for marking all as read, 
-    // instead of closing the popover automatically marking them read.
-  };
-
-  const handleItemClick = (notification: Notification) => {
+  const handleItemClick = async (notification: Notification) => {
+    setIsPopoverOpen(false);
     onNotificationClick(notification);
-    setIsPopoverOpen(false); // Close popover on click
+    // Remove from local state immediately for better UX
+    setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   return (
-    <Popover open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
+    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative hover:bg-accent/10">
+          <Bell className="h-5 w-5 text-gray-700" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs" variant="destructive">
+            <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-[10px] bg-red-600 hover:bg-red-700">
               {unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h4 className="font-medium leading-none">Notifications</h4>
-          {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleMarkAllAsRead}
-              className="text-xs h-6 px-2 text-primary hover:bg-primary/10"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" /> Mark All Read
-            </Button>
-          )}
+      <PopoverContent className="w-80 p-0 shadow-lg border-muted" align="end">
+        <div className="p-3 border-b bg-muted/30">
+          <h4 className="font-semibold text-sm">Notifications</h4>
         </div>
-        <ScrollArea className="h-72">
+        <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center p-4">No new notifications.</p>
+            <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+              <BellOff className="h-8 w-8 mb-2 opacity-20" />
+              <p className="text-sm">No new notifications</p>
+            </div>
           ) : (
-            <div className="p-2">
-              {notifications.map((notification) => (
+            <div className="divide-y divide-muted">
+              {notifications.map((n) => (
                 <button
-                  key={notification.id}
-                  onClick={() => handleItemClick(notification)}
-                  disabled={!notification.event_id}
-                  className={`w-full text-left mb-2 items-start pb-2 last:mb-0 last:pb-0 border-b last:border-none p-2 rounded-md transition-colors ${!notification.is_read ? 'font-semibold' : 'text-muted-foreground'} ${notification.event_id ? 'hover:bg-accent cursor-pointer' : 'cursor-default'}`}
+                  key={n.id}
+                  onClick={() => handleItemClick(n)}
+                  className="w-full text-left p-3 hover:bg-accent transition-colors flex flex-col gap-1"
                 >
-                  <div className="space-y-1">
-                    <p className="text-sm leading-snug">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                    </p>
-                  </div>
+                  <p className="text-sm leading-tight line-clamp-2 font-medium">
+                    {n.message}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                  </span>
                 </button>
               ))}
             </div>
           )}
         </ScrollArea>
-        
-        {/* Footer with Mark All As Read button (as requested, placed at the bottom left) */}
-        <div className="p-2 border-t">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleMarkAllAsRead}
-            disabled={unreadCount === 0}
-            className="h-8 w-8 text-muted-foreground hover:text-primary"
-          >
-            <CheckCheck className="h-4 w-4" />
-          </Button>
-        </div>
       </PopoverContent>
     </Popover>
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -58,14 +58,18 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
 
   useEffect(() => {
     const fetchDropdownData = async () => {
-      const { data: depts, error: deptsError } = await supabase.from('departments').select('*');
-      if (deptsError) toast.error('Failed to fetch departments.'); else setDepartments(depts);
-
-      const { data: clubsData, error: clubsError } = await supabase.from('clubs').select('*');
-      if (clubsError) toast.error('Failed to fetch clubs.'); else setClubs(clubsData);
-
-      const { data: societiesData, error: societiesError } = await supabase.from('professional_societies').select('*');
-      if (societiesError) toast.error('Failed to fetch societies.'); else setSocieties(societiesData);
+      try {
+        const [depts, clubsData, societiesData] = await Promise.all([
+          api.departments.list(),
+          api.clubs.list(),
+          api.societies.list()
+        ]);
+        setDepartments(depts);
+        setClubs(clubsData);
+        setSocieties(societiesData);
+      } catch (error: any) {
+        toast.error('Failed to load dropdown data');
+      }
     };
     if (isOpen) {
       fetchDropdownData();
@@ -87,29 +91,27 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
     if (!user) return;
 
     const updateData = {
-      ...values,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: values.role,
       department: (values.role === 'coordinator' || values.role === 'hod') 
         ? (values.department === '--none--' ? null : values.department) 
         : null,
       club: values.role === 'coordinator' 
         ? (values.club === '--none--' ? null : values.club) 
         : null,
-      professional_society: values.role === 'coordinator'
+      professionalSociety: values.role === 'coordinator'
         ? (values.professional_society === '--none--' ? null : values.professional_society)
         : null,
     };
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', user.id);
-
-    if (error) {
-      toast.error(`Failed to update user: ${error.message}`);
-    } else {
+    try {
+      await api.users.update(user.id, updateData);
       toast.success('User profile updated successfully.');
       onSuccess();
       onClose();
+    } catch (error: any) {
+      toast.error(`Failed to update user: ${error.message}`);
     }
   };
 

@@ -14,7 +14,7 @@ import {
 import { UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import EventActionDialog from './EventActionDialog';
 import EventDialog from './EventDialog';
@@ -33,36 +33,19 @@ const Layout = ({ children }: { children: ReactNode }) => {
   const [notificationEvent, setNotificationEvent] = useState<any | null>(null);
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.event_id) {
-      toast.info("This notification is not related to a specific event.");
-      return;
+    try {
+      // Mark as read in backend
+      await api.notifications.markAsRead(notification.id);
+      
+      // If linked to an event, fetch details and open dialog
+      if (notification.event_id) {
+        const eventData = await api.events.get(notification.event_id);
+        setNotificationEvent(eventData);
+      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+      toast.error('Failed to process notification');
     }
-
-    if (!notification.is_read) {
-      await supabase.from('notifications').update({ is_read: true }).eq('id', notification.id);
-    }
-
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        venues ( name, location ),
-        submitted_by:profiles ( first_name, last_name )
-      `)
-      .eq('id', notification.event_id)
-      .single();
-
-    if (error || !data) {
-      toast.error("Could not find the event associated with this notification.");
-      return;
-    }
-    
-    const eventData = {
-        ...data,
-        profiles: data.submitted_by,
-    };
-
-    setNotificationEvent(eventData);
   };
 
   const handleDialogClose = () => {
@@ -107,7 +90,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar role={profile.role} />
+      <Sidebar role={profile.role as 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal'} />
       <div className="flex-1 flex flex-col">
         <header className="flex justify-between items-center p-4 border-b bg-background">
           <h1 className="text-xl font-semibold">Event Management System</h1>
