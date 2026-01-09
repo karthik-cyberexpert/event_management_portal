@@ -16,6 +16,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
 import ManageProfessionalSocieties from "./pages/admin/ManageProfessionalSocieties";
+import OnboardingPage from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -36,27 +37,41 @@ const AppRoutes = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/update-password" element={<UpdatePassword />} />
       <Route 
+        path="/onboarding" 
+        element={
+          session ? (
+            profile?.is_onboarded ? <Navigate to="/" replace /> : <OnboardingPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        } 
+      />
+      <Route 
         path="/*" 
         element={
           session ? (
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/all-events" element={<AllEvents />} />
-                
-                {profile?.role === 'admin' && (
-                  <>
-                    <Route path="/venues" element={<ManageVenues />} />
-                    <Route path="/users" element={<ManageUsers />} />
-                    <Route path="/departments" element={<ManageDepartments />} />
-                    <Route path="/clubs" element={<ManageClubs />} />
-                    <Route path="/professional-societies" element={<ManageProfessionalSocieties />} />
-                  </>
-                )}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
+            !profile?.is_onboarded ? (
+              <Navigate to="/onboarding" replace />
+            ) : (
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/all-events" element={<AllEvents />} />
+                  
+                  {profile?.role === 'admin' && (
+                    <>
+                      <Route path="/venues" element={<ManageVenues />} />
+                      <Route path="/users" element={<ManageUsers />} />
+                      <Route path="/departments" element={<ManageDepartments />} />
+                      <Route path="/clubs" element={<ManageClubs />} />
+                      <Route path="/professional-societies" element={<ManageProfessionalSocieties />} />
+                    </>
+                  )}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            )
           ) : (
             <Navigate to="/login" replace />
           )

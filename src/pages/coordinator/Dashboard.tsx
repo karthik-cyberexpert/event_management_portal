@@ -22,7 +22,7 @@ import {
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, isEventFinished } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
@@ -92,6 +92,10 @@ const CoordinatorDashboard = () => {
   };
   
   const handleDownloadReport = (event: any) => {
+    if (!isEventFinished(event)) {
+      toast.error('Event is not yet finished. You can only generate reports after the event date.');
+      return;
+    }
     setSelectedEvent(event);
     setIsReportGeneratorOpen(true);
   };

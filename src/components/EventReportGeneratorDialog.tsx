@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { format, parseISO, differenceInDays } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, isEventFinished } from '@/lib/utils';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
@@ -126,6 +126,13 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const reportRef = useRef<HTMLDivElement>(null);
   
   const durationHours = useMemo(() => calculateDurationHours(event), [event]);
+
+  useEffect(() => {
+    if (isOpen && event && !isEventFinished(event)) {
+      toast.error('Cannot access report generator for unfinished events.');
+      onClose();
+    }
+  }, [isOpen, event, onClose]);
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(formSchema),

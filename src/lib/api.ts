@@ -42,11 +42,17 @@ export const api = {
       }),
 
     me: () => fetchAPI('/auth/me'),
-    
-    updatePassword: (password: string) =>
+
+    onboard: (data: { password: string }) => 
+      fetchAPI('/auth/onboard', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updatePassword: (data: { oldPassword: string; newPassword: string }) =>
       fetchAPI('/auth/update-password', {
         method: 'POST',
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(data),
       }),
 
     resetPassword: (email: string) =>
@@ -194,4 +200,3 @@ export const api = {
     markAsRead: (id: string) => fetchAPI(`/notifications/${id}/read`, { method: 'PUT' }),
   },
 };
-

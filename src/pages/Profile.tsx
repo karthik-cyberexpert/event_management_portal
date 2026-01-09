@@ -23,21 +23,41 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Lock, ShieldCheck, KeyRound } from 'lucide-react';
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
 });
 
+const passwordSchema = z.object({
+  oldPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 const ProfilePage = () => {
   const { profile, user, refreshProfile } = useAuth();
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       first_name: '',
       last_name: '',
+    },
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      oldPassword: '',
+      newPassword: '',
+      confirmPassword: '',
     },
   });
 
@@ -62,6 +82,22 @@ const ProfilePage = () => {
       await refreshProfile();
     } catch (error: any) {
       toast.error(`Failed to update profile: ${error.message}`);
+    }
+  };
+
+  const onPasswordSubmit = async (values: z.infer<typeof passwordSchema>) => {
+    setIsPasswordLoading(true);
+    try {
+      await api.auth.updatePassword({
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword,
+      });
+      toast.success('Password updated successfully!');
+      passwordForm.reset();
+    } catch (error: any) {
+      toast.error(`Failed to update password: ${error.message}`);
+    } finally {
+      setIsPasswordLoading(false);
     }
   };
 
@@ -170,6 +206,84 @@ const ProfilePage = () => {
                 className="rounded-xl h-12 px-8 font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-indigo-100 transition-all"
               >
                 {form.formState.isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
+      </Card>
+
+      <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden group mt-8">
+        <CardHeader className="bg-gradient-to-r from-rose-50/50 to-transparent border-b pb-8">
+          <div className="flex items-center gap-6">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-100 group-hover:rotate-3 transition-transform">
+              <KeyRound className="w-8 h-8" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-slate-800">Security & Password</CardTitle>
+              <CardDescription className="text-slate-500 font-medium mt-1">
+                Update your security credentials to keep your account safe.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <Form {...passwordForm}>
+          <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+            <CardContent className="space-y-8 p-8">
+              <FormField
+                control={passwordForm.control}
+                name="oldPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
+                       Current Password
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter current password" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <FormField
+                  control={passwordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
+                         New Password
+                      </FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
+                         Confirm New Password
+                      </FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="bg-slate-50/50 border-t p-8 flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={isPasswordLoading}
+                className="rounded-xl h-12 px-8 font-bold bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-100 transition-all"
+              >
+                {isPasswordLoading ? 'Updating...' : 'Update Password'}
               </Button>
             </CardFooter>
           </form>

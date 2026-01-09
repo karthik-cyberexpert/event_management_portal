@@ -7,6 +7,7 @@ interface User {
   role: string;
   firstName?: string;
   lastName?: string;
+  isOnboarded?: boolean;
 }
 
 interface Session {
@@ -29,6 +30,7 @@ interface Profile {
   department_name?: string;
   club_name?: string;
   society_name?: string;
+  is_onboarded?: boolean;
 }
 
 interface AuthContextType {

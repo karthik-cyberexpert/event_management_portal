@@ -57,7 +57,8 @@ const login = async (req, res, next) => {
         email: user.email,
         role: profile.role,
         firstName: profile.first_name,
-        lastName: profile.last_name
+        lastName: profile.last_name,
+        isOnboarded: user.is_onboarded
       }
     });
   } catch (error) {
@@ -84,10 +85,13 @@ const signup = async (req, res, next) => {
       phoneNumber
     } = req.body;
     
+    // Default password for admin-created users
+    const finalPassword = password || 'password';
+    
     // Validation
-    if (!email || !password || !firstName || !lastName || !role) {
+    if (!email || !firstName || !lastName || !role) {
       return res.status(400).json({
-        error: 'Email, password, first name, last name, and role are required'
+        error: 'Email, first name, last name, and role are required'
       });
     }
     
@@ -105,13 +109,13 @@ const signup = async (req, res, next) => {
     }
     
     // Hash password
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(finalPassword);
     const userId = uuidv4();
     
     // Insert user
     await connection.query(
-      'INSERT INTO users (id, email, encrypted_password, email_confirmed_at) VALUES (?, ?, ?, NOW())',
-      [userId, email, hashedPassword]
+      'INSERT INTO users (id, email, encrypted_password, is_onboarded, email_confirmed_at) VALUES (?, ?, ?, ?, NOW())',
+      [userId, email, hashedPassword, false]
     );
     
     // Insert profile
@@ -133,7 +137,8 @@ const signup = async (req, res, next) => {
         email,
         role,
         firstName,
-        lastName
+        lastName,
+        isOnboarded: false
       }
     });
   } catch (error) {
@@ -150,7 +155,7 @@ const signup = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const [profiles] = await db.query(
-      `SELECT p.*, u.email
+      `SELECT p.*, u.email, u.is_onboarded
        FROM profiles p
        JOIN users u ON p.id = u.id
        WHERE p.id = ?`,
@@ -172,14 +177,23 @@ const getMe = async (req, res, next) => {
  */
 const updatePassword = async (req, res, next) => {
   try {
-    const { password } = req.body;
+    const { oldPassword, newPassword } = req.body;
     const userId = req.user.userId;
 
-    if (!password) {
-      return res.status(400).json({ error: 'New password is required' });
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'Old password and new password are required' });
     }
 
-    const hashedPassword = await hashPassword(password);
+    // Get user to verify old password
+    const [users] = await db.query('SELECT encrypted_password FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const isValid = await comparePassword(oldPassword, users[0].encrypted_password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid current password' });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
 
     await db.query(
       'UPDATE users SET encrypted_password = ? WHERE id = ?',
@@ -187,6 +201,31 @@ const updatePassword = async (req, res, next) => {
     );
 
     res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Onboard user (Self-onboarding password setup)
+ */
+const onboard = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user.userId;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await db.query(
+      'UPDATE users SET encrypted_password = ?, is_onboarded = TRUE WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    res.json({ message: 'Onboarding completed successfully' });
   } catch (error) {
     next(error);
   }
@@ -233,4 +272,4 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { login, signup, getMe, updatePassword, resetPassword, updateProfile };
+module.exports = { login, signup, getMe, updatePassword, resetPassword, updateProfile, onboard };
