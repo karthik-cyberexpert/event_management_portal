@@ -98,7 +98,7 @@ const HodDashboard = () => {
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b pb-4">
               <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 Events Requiring Attention
-                <Badge variant="outline" className="bg-white/50">{events.length}</Badge>
+                <Badge variant="outline" className="bg-primary/10 text-primary-700 border-primary/20 font-bold">{events.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-auto">
@@ -177,15 +177,13 @@ const HodDashboard = () => {
               <p className="text-white/60 text-xs mt-2 font-bold uppercase tracking-widest">Monthly Overview</p>
             </CardHeader>
             <CardContent className="p-6 flex flex-col items-center bg-white">
-              <div 
-                className="cursor-pointer rounded-2xl transition-all p-2 w-full flex flex-col items-center group/cal hover:scale-[1.02]"
-                onClick={() => navigate('/all-events?tab=calendar')}
-              >
-                <div className="bg-slate-50 rounded-2xl p-4 shadow-inner ring-1 ring-slate-100 w-full flex justify-center">
+              <div className="w-full flex flex-col items-center group/cal">
+                <div className="w-full flex justify-center">
                   <MiniCalendar
                     mode="single"
                     selected={new Date()}
-                    className="pointer-events-none transform scale-110 origin-center py-2"
+                    onDayClick={() => navigate('/all-events?tab=calendar')}
+                    className="transform scale-110 origin-center py-2"
                     modifiers={{
                       event: eventDays
                     }}
@@ -195,10 +193,14 @@ const HodDashboard = () => {
                   />
                 </div>
                 <div className="mt-8 w-full group/btn">
-                  <Button variant="outline" className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/cal:translate-y-[-2px]">
+                  <Button 
+                    onClick={() => navigate('/all-events?tab=calendar')}
+                    variant="outline" 
+                    className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/btn:translate-y-[-2px]"
+                  >
                     Events Calendar
                   </Button>
-                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click to view full calendar</p>
+                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click a date to view full calendar</p>
                 </div>
               </div>
             </CardContent>

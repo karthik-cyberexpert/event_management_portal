@@ -218,7 +218,7 @@ const CoordinatorDashboard = () => {
                 <div className="flex items-center justify-center gap-2">
                   <ShieldCheck className="w-4 h-4" />
                   <span>Pending</span>
-                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{pendingEvents.length}</Badge>
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 text-[10px] ml-1 px-1.5 min-w-[1.2rem] group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary transition-colors">{pendingEvents.length}</Badge>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
@@ -228,7 +228,7 @@ const CoordinatorDashboard = () => {
                 <div className="flex items-center justify-center gap-2">
                   <AlertCircle className="w-4 h-4" />
                   <span>Returned</span>
-                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{returnedEvents.length}</Badge>
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 text-[10px] ml-1 px-1.5 min-w-[1.2rem] group-data-[state=active]:bg-rose-100 group-data-[state=active]:text-rose-600 transition-colors">{returnedEvents.length}</Badge>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
@@ -238,7 +238,7 @@ const CoordinatorDashboard = () => {
                 <div className="flex items-center justify-center gap-2">
                   <List className="w-4 h-4" />
                   <span>Approved</span>
-                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{approvedEvents.length}</Badge>
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 text-[10px] ml-1 px-1.5 min-w-[1.2rem] group-data-[state=active]:bg-emerald-100 group-data-[state=active]:text-emerald-600 transition-colors">{approvedEvents.length}</Badge>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -269,15 +269,13 @@ const CoordinatorDashboard = () => {
               <p className="text-white/60 text-xs mt-2 font-bold uppercase tracking-widest">Monthly Overview</p>
             </CardHeader>
             <CardContent className="p-6 flex flex-col items-center bg-white">
-              <div 
-                className="cursor-pointer rounded-2xl transition-all p-2 w-full flex flex-col items-center group/cal hover:scale-[1.02]"
-                onClick={() => navigate('/all-events?tab=calendar')}
-              >
-                <div className="bg-slate-50 rounded-2xl p-4 shadow-inner ring-1 ring-slate-100 w-full flex justify-center">
+              <div className="w-full flex flex-col items-center group/cal">
+                <div className="w-full flex justify-center">
                   <MiniCalendar
                     mode="single"
                     selected={new Date()}
-                    className="pointer-events-none transform scale-110 origin-center py-2"
+                    onDayClick={() => navigate('/all-events?tab=calendar')}
+                    className="transform scale-110 origin-center py-2"
                     modifiers={{
                       event: eventDays
                     }}
@@ -287,10 +285,14 @@ const CoordinatorDashboard = () => {
                   />
                 </div>
                 <div className="mt-8 w-full group/btn">
-                  <Button variant="outline" className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/cal:translate-y-[-2px]">
+                  <Button 
+                    onClick={() => navigate('/all-events?tab=calendar')}
+                    variant="outline" 
+                    className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/btn:translate-y-[-2px]"
+                  >
                     Events Calendar
                   </Button>
-                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click to view full calendar</p>
+                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click a date to view full calendar</p>
                 </div>
               </div>
             </CardContent>
