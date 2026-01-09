@@ -221,12 +221,13 @@ CREATE TABLE `notifications` (
 -- INITIAL DATA: ADMINISTRATIVE USER
 -- ============================================
 -- Password: password123
-INSERT INTO `users` (`id`, `email`, `encrypted_password`, `email_confirmed_at`) 
+INSERT INTO `users` (`id`, `email`, `encrypted_password`, `email_confirmed_at`, `is_onboarded`) 
 VALUES (
   '30f8a964-6df4-411a-821f-82bb31a28a31', 
-  'admin@test.com', 
-  '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 
-  NOW()
+  'admin@gmail.com', 
+  '$2b$10$BGzV.gxH5pCX/kG/2DCQ0uggtLkj4gLnI8oaG4R92B8EYq5GB0JZC', 
+  NOW(),
+  FALSE
 );
 
 INSERT INTO `profiles` (`id`, `first_name`, `last_name`, `role`, `department`) 
