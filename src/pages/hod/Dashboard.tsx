@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
 import {
   Table,
   TableBody,
@@ -15,45 +14,48 @@ import { format } from 'date-fns';
 import EventActionDialog from '@/components/EventActionDialog';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, ShieldCheck, CalendarDays } from 'lucide-react';
+import { CalendarDays, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar as MiniCalendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const statusColors = {
-  pending_hod: 'bg-yellow-500',
-  resubmitted: 'bg-indigo-500',
-  returned_to_coordinator: 'bg-orange-500',
-  pending_dean: 'bg-yellow-600',
-  returned_to_hod: 'bg-orange-600',
-  pending_principal: 'bg-yellow-700',
-  returned_to_dean: 'bg-orange-700',
-  approved: 'bg-green-500',
-  rejected: 'bg-red-500',
-  cancelled: 'bg-gray-500',
+  pending_hod: 'bg-amber-100 text-amber-700 border-amber-200',
+  resubmitted: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_coordinator: 'bg-rose-100 text-rose-700 border-rose-200',
+  pending_dean: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_hod: 'bg-rose-100 text-rose-700 border-rose-200',
+  pending_principal: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_dean: 'bg-rose-100 text-rose-700 border-rose-200',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  rejected: 'bg-red-100 text-red-700 border-red-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
 const HodDashboard = () => {
-  const { profile } = useAuth();
   const navigate = useNavigate();
-  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const { profile } = useAuth();
+  const [events, setEvents] = useState<any[]>([]);
+  const [allViewableEvents, setAllViewableEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   const fetchEvents = async () => {
-    if (!profile) {
-      setLoading(false);
-      return;
-    }
+    if (!profile) return;
     setLoading(true);
     try {
       const data = await api.events.list();
-      const departmentEvents = data.filter((event: any) => 
-        (event.department === profile.department) || (event.department_club === profile.department)
+      setAllViewableEvents(data);
+      
+      const hodEvents = data.filter((event: any) => 
+        (event.status === 'pending_hod' || event.status === 'returned_to_hod' || event.status === 'resubmitted') &&
+        (event.department === profile.department || event.department_club === profile.department)
       );
-      setAllEvents(departmentEvents);
+      
+      setEvents(hodEvents);
     } catch (error: any) {
       console.error('Error fetching events:', error);
       toast.error('Failed to load events.');
@@ -63,9 +65,7 @@ const HodDashboard = () => {
   };
 
   useEffect(() => {
-    if (profile) {
-      fetchEvents();
-    }
+    fetchEvents();
   }, [profile]);
 
   const handleActionSuccess = () => {
@@ -83,134 +83,122 @@ const HodDashboard = () => {
     return status === 'pending_hod' || status === 'returned_to_hod' || status === 'resubmitted';
   };
 
-  const pendingEvents = allEvents.filter(e => isReviewable(e));
-  const eventDays = allEvents.map(e => new Date(e.event_date));
-
-  const renderEventTable = (eventsList: any[], title: string) => (
-    <Card className="bg-white rounded-lg shadow h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-background border-b">
-              <TableHead className="text-primary">Title</TableHead>
-              <TableHead className="text-primary">Submitted By</TableHead>
-              <TableHead className="text-primary">Venue</TableHead>
-              <TableHead className="text-primary">Date</TableHead>
-              <TableHead className="text-primary">Status</TableHead>
-              <TableHead className="text-primary text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
-              </TableRow>
-            ) : eventsList.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
-              </TableRow>
-            ) : (
-              eventsList.map((event: any) => {
-                const isPending = isReviewable(event);
-                return (
-                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                    <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                    <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                    <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
-                      {event.venues?.name || event.other_venue_details || 'N/A'}
-                    </TableCell>
-                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                    <TableCell>
-                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize text-[10px]`}>
-                        {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant={isReviewable(event) ? 'outline' : 'ghost'} 
-                        size="sm" 
-                        onClick={() => {
-                          if (isReviewable(event)) {
-                            setSelectedEvent(event);
-                          } else {
-                            handleViewDetails(event);
-                          }
-                        }}
-                      >
-                        {isReviewable(event) ? 'Review' : 'View'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
+  const eventDays = allViewableEvents.map(e => new Date(e.event_date));
 
   return (
-    <div className="space-y-6 max-w-full overflow-hidden">
-      <h2 className="text-3xl font-bold">HOD Dashboard</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="pending">
-            <TabsList className="mb-4 bg-muted p-1 rounded-lg">
-              <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
-                <ShieldCheck className="w-4 h-4 mr-2 hidden sm:inline" />
-                Pending My Action ({pendingEvents.length})
-              </TabsTrigger>
-              <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
-                <List className="w-4 h-4 mr-2 hidden sm:inline" />
-                All Department Events ({allEvents.length})
-              </TabsTrigger>
-            </TabsList>
+    <div className="space-y-8 max-w-full overflow-hidden animate-in fade-in duration-700">
+      <div>
+        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">HOD Dashboard</h2>
+        <p className="text-slate-500 font-medium mt-1">Review and manage department event requests.</p>
+      </div>
 
-            <TabsContent value="pending" className="h-[500px]">
-              {renderEventTable(pendingEvents, "Events Requiring My Approval")}
-            </TabsContent>
-            
-            <TabsContent value="all" className="h-[500px]">
-              {renderEventTable(allEvents, "All Department Events")}
-            </TabsContent>
-          </Tabs>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3">
+          <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg h-full flex flex-col overflow-hidden group">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b pb-4">
+              <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                Events Requiring Attention
+                <Badge variant="outline" className="bg-white/50">{events.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                    <TableHead className="py-4 font-bold text-slate-600">Title</TableHead>
+                    <TableHead className="py-4 font-bold text-slate-600">Coordinator</TableHead>
+                    <TableHead className="py-4 font-bold text-slate-600">Venue</TableHead>
+                    <TableHead className="py-4 font-bold text-slate-600">Date</TableHead>
+                    <TableHead className="py-4 font-bold text-slate-600 text-center">Status</TableHead>
+                    <TableHead className="py-4 font-bold text-slate-600 text-right pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-64 text-center text-muted-foreground animate-pulse">Loading events...</TableCell>
+                    </TableRow>
+                  ) : events.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-64 text-center text-muted-foreground bg-slate-50/30">
+                        <div className="flex flex-col items-center gap-2 opacity-50">
+                          <CheckCircle className="h-8 w-8 text-emerald-500" />
+                          <p>No events are currently pending your approval.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    events.map((event: any) => {
+                      const isPending = isReviewable(event);
+                      return (
+                        <TableRow key={event.id} className="hover:bg-primary/5 transition-colors group/row">
+                          <TableCell className="font-semibold text-slate-900">{event.title}</TableCell>
+                          <TableCell className="text-slate-600 font-medium">{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                          <TableCell className="text-primary font-medium">{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
+                          <TableCell className="text-slate-600 font-medium">{format(new Date(event.event_date), 'MMM d, yyyy')}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border", statusColors[event.status as keyof typeof statusColors])}>
+                              {event.status.replace(/_/g, ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <Button 
+                              variant={isReviewable(event) ? 'default' : 'outline'} 
+                              size="sm" 
+                              className={cn("rounded-lg font-bold transition-all px-4", isReviewable(event) ? "bg-primary hover:bg-primary/90 shadow-indigo-200 shadow-md" : "")}
+                              onClick={() => {
+                                if (isReviewable(event)) {
+                                  setSelectedEvent(event);
+                                } else {
+                                  handleViewDetails(event);
+                                }
+                              }}
+                            >
+                              {isReviewable(event) ? 'Review' : 'View'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="lg:col-span-1">
-          <Card className="sticky top-6 shadow-sm border-primary/10">
-            <CardHeader className="pb-3 text-center border-b bg-muted/30">
-              <CardTitle className="text-lg flex items-center justify-center gap-2 text-primary">
-                <CalendarDays className="h-5 w-5" />
-                Mini Calendar
+          <Card className="sticky top-24 shadow-2xl border-primary/5 rounded-3xl overflow-hidden ring-1 ring-slate-900/5">
+            <CardHeader className="bg-gradient-to-br from-primary to-primary-70 pt-8 pb-6 text-center text-white">
+              <CardTitle className="text-2xl font-black flex items-center justify-center gap-3">
+                <CalendarDays className="h-7 w-7 text-white/90" />
+                Schedule
               </CardTitle>
+              <p className="text-white/60 text-xs mt-2 font-bold uppercase tracking-widest">Monthly Overview</p>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col items-center">
+            <CardContent className="p-6 flex flex-col items-center bg-white">
               <div 
-                className="cursor-pointer rounded-xl transition-all border-2 border-transparent p-3 w-full flex flex-col items-center group"
+                className="cursor-pointer rounded-2xl transition-all p-2 w-full flex flex-col items-center group/cal hover:scale-[1.02]"
                 onClick={() => navigate('/all-events?tab=calendar')}
               >
-                <div className="bg-white rounded-lg p-1 shadow-sm border border-border/50">
+                <div className="bg-slate-50 rounded-2xl p-4 shadow-inner ring-1 ring-slate-100 w-full flex justify-center">
                   <MiniCalendar
                     mode="single"
                     selected={new Date()}
-                    className="pointer-events-none"
+                    className="pointer-events-none transform scale-110 origin-center py-2"
                     modifiers={{
                       event: eventDays
                     }}
                     modifiersStyles={{
-                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '4px' }
+                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
                     }}
                   />
                 </div>
-                <div className="mt-4 w-full">
-                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                    View Full Approved Calendar
+                <div className="mt-8 w-full group/btn">
+                  <Button variant="outline" className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/cal:translate-y-[-2px]">
+                    Events Calendar
                   </Button>
+                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click to view full calendar</p>
                 </div>
               </div>
             </CardContent>

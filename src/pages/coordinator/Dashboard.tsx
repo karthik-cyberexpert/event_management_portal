@@ -15,13 +15,14 @@ import {
   ShieldCheck,
   AlertCircle,
   List,
-  MoreHorizontal,
+  MoreVertical,
   Download,
   CalendarDays
 } from 'lucide-react';
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
@@ -38,14 +39,15 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar as MiniCalendar } from '@/components/ui/calendar';
 
 const statusColors = {
-  pending_hod: 'bg-yellow-500',
-  pending_dean: 'bg-yellow-500',
-  pending_principal: 'bg-yellow-500',
-  approved: 'bg-green-500',
-  rejected: 'bg-red-500',
-  returned_to_hod: 'bg-orange-500',
-  returned_to_dean: 'bg-orange-500',
-  cancelled: 'bg-gray-500',
+  pending_hod: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_coordinator: 'bg-rose-100 text-rose-700 border-rose-200',
+  pending_dean: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_hod: 'bg-rose-100 text-rose-700 border-rose-200',
+  pending_principal: 'bg-amber-100 text-amber-700 border-amber-200',
+  returned_to_dean: 'bg-rose-100 text-rose-700 border-rose-200',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  rejected: 'bg-red-100 text-red-700 border-red-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
 const CoordinatorDashboard = () => {
@@ -101,87 +103,87 @@ const CoordinatorDashboard = () => {
   const eventDays = allEvents.map(e => new Date(e.event_date));
 
   const renderEventTable = (eventsList: any[], title: string) => (
-    <Card className="bg-white rounded-lg shadow h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg h-full flex flex-col overflow-hidden group">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b pb-4">
+        <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          {title}
+          <Badge variant="outline" className="bg-white/50">{eventsList.length}</Badge>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-0 overflow-auto">
+      <CardContent className="p-0 overflow-auto flex-1">
         <Table>
           <TableHeader>
-            <TableRow className="bg-background border-b">
-              <TableHead className="text-primary">Title</TableHead>
-              <TableHead className="text-primary">Dept/Club/Society</TableHead>
-              <TableHead className="text-primary">Venue</TableHead>
-              <TableHead className="text-primary">Date</TableHead>
-              <TableHead className="text-primary">Status</TableHead>
-              <TableHead className="text-primary text-right">Actions</TableHead>
+            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+              <TableHead className="py-4 font-bold text-slate-600">Title</TableHead>
+              <TableHead className="py-4 font-bold text-slate-600">Dept/Club/Society</TableHead>
+              <TableHead className="py-4 font-bold text-slate-600">Venue</TableHead>
+              <TableHead className="py-4 font-bold text-slate-600">Date</TableHead>
+              <TableHead className="py-4 font-bold text-slate-600 text-center">Status</TableHead>
+              <TableHead className="py-4 font-bold text-slate-600 text-right pr-6">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={6} className="h-64 text-center text-muted-foreground animate-pulse">Loading events...</TableCell>
               </TableRow>
             ) : eventsList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
+                <TableCell colSpan={6} className="h-64 text-center text-muted-foreground bg-slate-50/30">
+                  <div className="flex flex-col items-center gap-2 opacity-50">
+                    <AlertCircle className="h-8 w-8" />
+                    <p>No events found in this category.</p>
+                  </div>
+                </TableCell>
               </TableRow>
             ) : (
-              eventsList.map((event: any) => {
-                const isReturned = event.status === 'returned_to_coordinator';
-                const isApproved = event.status === 'approved';
-                return (
-                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                    <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                    <TableCell>{event.department_club || 'N/A'}</TableCell>
-                    <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
-                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                    <TableCell>
-                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize text-[10px]`}>
-                        {event.status.replace(/_/g, ' ').replace('dean', 'Dean IR')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewAction(event)}>
-                            {isReturned ? 'Edit & Resubmit' : 'View Details'}
-                          </DropdownMenuItem>
-                          
-                          {isReturned && (
+              eventsList.map((event: any) => (
+                <TableRow key={event.id} className="hover:bg-primary/5 transition-colors group/row">
+                  <TableCell className="font-semibold text-slate-900">{event.title}</TableCell>
+                  <TableCell className="text-slate-600 font-medium">{event.department_club || 'N/A'}</TableCell>
+                  <TableCell className="text-primary font-medium">{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
+                  <TableCell className="text-slate-600 font-medium">{format(new Date(event.event_date), 'MMM d, yyyy')}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border", statusColors[event.status as keyof typeof statusColors])}>
+                      {event.status.replace(/_/g, ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-primary/10">
+                          <MoreVertical className="h-4 w-4 text-slate-500" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => handleViewAction(event)} className="cursor-pointer">
+                          {event.status === 'returned_to_coordinator' ? (
+                            <><PlusCircle className="mr-2 h-4 w-4" /> Edit Event</>
+                          ) : (
+                            <><List className="mr-2 h-4 w-4" /> View Details</>
+                          )}
+                        </DropdownMenuItem>
+                        {event.status === 'returned_to_coordinator' && (
                             <DropdownMenuItem 
                               onClick={() => {
                                 setSelectedEvent(event);
                                 setIsReturnReasonDialogOpen(true);
                               }}
+                              className="cursor-pointer"
                             >
-                              View Remarks History
+                              <AlertCircle className="mr-2 h-4 w-4" /> View Remarks History
                             </DropdownMenuItem>
                           )}
-                          
-                          {isApproved && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDownloadReport(event)}
-                                className="text-primary font-medium"
-                              >
-                                <Download className="h-4 w-4 mr-2" /> Download Report
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
+                        {event.status === 'approved' && (
+                          <DropdownMenuItem onClick={() => handleDownloadReport(event)} className="cursor-pointer text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50">
+                            <Download className="mr-2 h-4 w-4" /> Generate Report
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
@@ -190,76 +192,105 @@ const CoordinatorDashboard = () => {
   );
 
   return (
-    <div className="space-y-6 max-w-full overflow-hidden">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Coordinator Dashboard</h2>
-        <Button onClick={() => setSelectedEvent({ mode: 'create' })}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create New Event
+    <div className="space-y-8 max-w-full overflow-hidden animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Coordinator Dashboard</h2>
+          <p className="text-slate-500 font-medium mt-1">Manage and track your overall event submissions.</p>
+        </div>
+        <Button 
+          onClick={() => setSelectedEvent({ mode: 'create' })}
+          className="bg-primary hover:bg-primary/90 text-white shadow-indigo-200 shadow-lg px-6 h-12 rounded-xl transition-all active:scale-95 group"
+        >
+          <PlusCircle className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" /> 
+          <span className="font-bold">Create New Event</span>
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="pending">
-            <TabsList className="mb-4 bg-muted p-1 rounded-lg">
-              <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
-                <ShieldCheck className="w-4 h-4 mr-2 hidden sm:inline" />
-                Pending ({pendingEvents.length})
+          <Tabs defaultValue="pending" className="w-full">
+            <TabsList className="bg-slate-200/50 p-1.5 rounded-2xl w-full sm:w-auto h-auto grid grid-cols-3 sm:flex">
+              <TabsTrigger 
+                value="pending" 
+                className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm font-bold transition-all"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Pending</span>
+                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{pendingEvents.length}</Badge>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="returned" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
-                <AlertCircle className="w-4 h-4 mr-2 hidden sm:inline" />
-                Returned ({returnedEvents.length})
+              <TabsTrigger 
+                value="returned" 
+                className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm font-bold transition-all"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Returned</span>
+                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{returnedEvents.length}</Badge>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="approved" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm">
-                <List className="w-4 h-4 mr-2 hidden sm:inline" />
-                Approved ({approvedEvents.length})
+              <TabsTrigger 
+                value="approved" 
+                className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm font-bold transition-all"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <List className="w-4 h-4" />
+                  <span>Approved</span>
+                  <Badge variant="secondary" className="bg-slate-100 text-[10px] ml-1 px-1.5 min-w-[1.2rem]">{approvedEvents.length}</Badge>
+                </div>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending" className="h-[500px]">
-              {renderEventTable(pendingEvents, "Awaiting Approval")}
-            </TabsContent>
-            
-            <TabsContent value="returned" className="h-[500px]">
-              {renderEventTable(returnedEvents, "Returned or Rejected")}
-            </TabsContent>
-            
-            <TabsContent value="approved" className="h-[500px]">
-              {renderEventTable(approvedEvents, "Approved Events")}
-            </TabsContent>
+            <div className="mt-8">
+              <TabsContent value="pending" className="h-[550px] animate-in fade-in slide-in-from-left-4 duration-500">
+                {renderEventTable(pendingEvents, "Awaiting Approval")}
+              </TabsContent>
+              
+              <TabsContent value="returned" className="h-[550px] animate-in fade-in slide-in-from-left-4 duration-500">
+                {renderEventTable(returnedEvents, "Returned or Rejected")}
+              </TabsContent>
+              
+              <TabsContent value="approved" className="h-[550px] animate-in fade-in slide-in-from-left-4 duration-500">
+                {renderEventTable(approvedEvents, "Approved Events")}
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
 
         <div className="lg:col-span-1">
-          <Card className="sticky top-6 shadow-sm border-primary/10">
-            <CardHeader className="pb-3 text-center border-b bg-muted/30">
-              <CardTitle className="text-lg flex items-center justify-center gap-2 text-primary">
-                <CalendarDays className="h-5 w-5" />
-                Mini Calendar
+          <Card className="sticky top-24 shadow-2xl border-primary/5 rounded-3xl overflow-hidden ring-1 ring-slate-900/5">
+            <CardHeader className="bg-gradient-to-br from-primary to-primary-70 pt-8 pb-6 text-center text-white">
+              <CardTitle className="text-2xl font-black flex items-center justify-center gap-3">
+                <CalendarDays className="h-7 w-7 text-white/90" />
+                Schedule
               </CardTitle>
+              <p className="text-white/60 text-xs mt-2 font-bold uppercase tracking-widest">Monthly Overview</p>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col items-center">
+            <CardContent className="p-6 flex flex-col items-center bg-white">
               <div 
-                className="cursor-pointer rounded-xl transition-all border-2 border-transparent p-3 w-full flex flex-col items-center group"
+                className="cursor-pointer rounded-2xl transition-all p-2 w-full flex flex-col items-center group/cal hover:scale-[1.02]"
                 onClick={() => navigate('/all-events?tab=calendar')}
               >
-                <div className="bg-white rounded-lg p-1 shadow-sm border border-border/50">
+                <div className="bg-slate-50 rounded-2xl p-4 shadow-inner ring-1 ring-slate-100 w-full flex justify-center">
                   <MiniCalendar
                     mode="single"
                     selected={new Date()}
-                    className="pointer-events-none"
+                    className="pointer-events-none transform scale-110 origin-center py-2"
                     modifiers={{
                       event: eventDays
                     }}
                     modifiersStyles={{
-                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '4px' }
+                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
                     }}
                   />
                 </div>
-                <div className="mt-4 w-full">
-                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                    View Full Approved Calendar
+                <div className="mt-8 w-full group/btn">
+                  <Button variant="outline" className="w-full rounded-xl py-6 font-black text-slate-800 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-md group-hover/cal:translate-y-[-2px]">
+                    Events Calendar
                   </Button>
+                  <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Click to view full calendar</p>
                 </div>
               </div>
             </CardContent>

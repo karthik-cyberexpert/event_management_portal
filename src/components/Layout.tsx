@@ -92,15 +92,19 @@ const Layout = ({ children }: { children: ReactNode }) => {
     <div className="flex min-h-screen">
       <Sidebar role={profile.role as 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal'} />
       <div className="flex-1 flex flex-col">
-        <header className="flex justify-between items-center p-4 border-b bg-background">
-          <h1 className="text-xl font-semibold">Event Management System</h1>
-          <div className="flex items-center gap-4">
+        <header className="flex justify-between items-center px-8 py-4 border-b bg-slate-50/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+            Event Management System
+          </h1>
+          <div className="flex items-center gap-6">
             <NotificationBell onNotificationClick={handleNotificationClick} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <UserCircle className="h-5 w-5" />
-                  <span>{profile.first_name} {profile.last_name}</span>
+                <Button variant="ghost" className="flex items-center gap-3 px-3 hover:bg-white/50 transition-all border border-transparent hover:border-border">
+                  <div className="bg-primary/10 p-1.5 rounded-full ring-1 ring-primary/20">
+                    <UserCircle className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="font-semibold text-slate-700 hidden sm:inline">{profile.first_name} {profile.last_name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

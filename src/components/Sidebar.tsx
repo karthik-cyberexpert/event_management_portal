@@ -42,11 +42,16 @@ const Sidebar = ({ role }: SidebarProps) => {
   const links = navLinks[role] || [];
 
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border">
-      <div className="p-6 text-2xl font-bold border-b border-sidebar-border">
-        EMS
+    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shadow-xl z-20">
+      <div className="p-8 border-b border-sidebar-border bg-gradient-to-br from-sidebar-background to-sidebar-accent/30 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tighter text-sidebar-primary drop-shadow-sm">
+          EMS
+        </h1>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/60 mt-1 font-semibold">
+          Event Management
+        </p>
       </div>
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-6">
         <ul className="space-y-2">
           {links.map(({ to, label, icon: Icon }) => (
             <li key={to}>

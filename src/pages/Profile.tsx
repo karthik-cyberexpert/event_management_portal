@@ -65,40 +65,110 @@ const ProfilePage = () => {
   };
 
   if (!profile || !user) {
-    return <div>Loading profile...</div>;
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center animate-pulse">
+        <div className="w-12 h-12 bg-primary/20 rounded-full mb-4" />
+        <div className="h-4 w-32 bg-slate-200 rounded" />
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">My Profile</h2>
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal details here. Assignments and Role are managed by an administrator.</CardDescription>
+    <div className="space-y-8 max-w-4xl animate-in fade-in duration-700">
+      <div>
+        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">My Profile</h2>
+        <p className="text-slate-500 font-medium mt-1">Manage your personal information and preferences.</p>
+      </div>
+
+      <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden group">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b pb-8">
+          <div className="flex items-center gap-6">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-primary-70 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-indigo-200 group-hover:rotate-3 transition-transform">
+              {profile.first_name[0]}{profile.last_name[0]}
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-slate-800">Profile Information</CardTitle>
+              <CardDescription className="text-slate-500 font-medium mt-1">
+                Your personal details and institutional assignments.
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="first_name" render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input placeholder="John" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <CardContent className="space-y-8 p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <FormField 
+                  control={form.control} 
+                  name="first_name" 
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" {...field} className="rounded-xl border-slate-200 focus:ring-primary/20 h-12 font-medium" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} 
+                />
+                <FormField 
+                  control={form.control} 
+                  name="last_name" 
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} className="rounded-xl border-slate-200 focus:ring-primary/20 h-12 font-medium" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} 
+                />
               </div>
               
-              <div><FormItem><FormLabel>Email Address</FormLabel><Input value={user.email || 'N/A'} disabled /></FormItem></div>
+              <FormItem>
+                <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">Email Address</FormLabel>
+                <Input value={user.email || 'N/A'} disabled className="rounded-xl bg-slate-50 border-slate-200 h-12 font-medium text-slate-500 cursor-not-allowed" />
+                <p className="text-[10px] text-slate-400 font-medium">Email cannot be changed as it is linked to your institutional account.</p>
+              </FormItem>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormItem><FormLabel>Department</FormLabel><Input value={profile.department || 'N/A'} disabled /></FormItem>
-                <FormItem><FormLabel>Club</FormLabel><Input value={profile.club || 'N/A'} disabled /></FormItem>
-                <FormItem><FormLabel>Professional Society</FormLabel><Input value={profile.professional_society || 'N/A'} disabled /></FormItem>
-              </div>
-               <div>
-                  <FormLabel>Role</FormLabel>
-                  <Input value={profile.role} disabled className="mt-2 capitalize" />
+              <div className="pt-6 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 mb-6 uppercase tracking-wider">Assignments & Role</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <FormItem>
+                    <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">Department</FormLabel>
+                    <div className="h-12 flex items-center px-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">
+                      {profile.department || 'N/A'}
+                    </div>
+                  </FormItem>
+                  <FormItem>
+                    <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">Club</FormLabel>
+                    <div className="h-12 flex items-center px-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">
+                      {profile.club || 'N/A'}
+                    </div>
+                  </FormItem>
+                  <FormItem>
+                    <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">Society</FormLabel>
+                    <div className="h-12 flex items-center px-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">
+                      {profile.professional_society || 'N/A'}
+                    </div>
+                  </FormItem>
+                </div>
+                <div className="mt-6">
+                  <FormLabel className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">System Role</FormLabel>
+                  <Badge className="ml-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors uppercase font-black tracking-tighter text-xs px-4 py-1.5 rounded-full">
+                    {profile.role}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+            <CardFooter className="bg-slate-50/50 border-t p-8 flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={form.formState.isSubmitting}
+                className="rounded-xl h-12 px-8 font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-indigo-100 transition-all"
+              >
+                {form.formState.isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}
               </Button>
             </CardFooter>
           </form>
