@@ -89,79 +89,101 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
 
   return (
     <div className="printable-report" ref={forwardedRef}>
-      <div className="p-4 bg-white text-black relative">
-        <div className="absolute top-4 right-4 text-sm font-mono bg-gray-100 p-2 rounded border">
-          ID: {data.unique_code || 'N/A'}
-        </div>
-        {/* College Header */}
-        <div className="text-center mb-2">
-          <h1 className="text-lg font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
-          <p className="text-sm text-gray-600">(An Autonomous Institution)</p>
-          <p className="text-sm text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
-          <h2 className="text-base font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
-        </div>
-        
-        {/* New Reference Number Line (Left Aligned) */}
-        <div className="text-left mb-4">
-          <p className="text-sm font-medium text-gray-700">{referenceNumber}</p>
-        </div>
-        
-        {/* Form Title */}
-        <h3 className="text-center text-base font-bold underline mb-4">Event Registration and Approval Form</h3>
-
-        {/* Bordered Content */}
-        <div className="border border-gray-400">
-          {/* Table Headers */}
-          <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
-            <div className="col-span-1">Section</div>
-            <div className="col-span-2">Details</div>
+      <div className="p-4 bg-white text-black relative flex flex-col justify-between min-h-[29.7cm]">
+        <div className="flex-1">
+          <div className="absolute top-4 right-4 text-sm font-mono bg-gray-100 p-2 rounded border">
+            ID: {data.unique_code || 'N/A'}
           </div>
+          {/* College Header */}
+          <div className="text-center mb-2">
+            <h1 className="text-lg font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
+            <p className="text-sm text-gray-600">(An Autonomous Institution)</p>
+            <p className="text-sm text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
+            <h2 className="text-base font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
+          </div>
+          
+          {/* New Reference Number Line (Left Aligned) */}
+          <div className="text-left mb-4">
+            <p className="text-sm font-medium text-gray-700">{referenceNumber}</p>
+          </div>
+          
+          {/* Form Title */}
+          <h3 className="text-center text-base font-bold underline mb-4">Event Registration and Approval Form</h3>
 
-          {/* Table Body */}
-          <div className="p-2">
-            <ReportRow label="Event Title" value={data.title} />
-            <ReportRow label="Department/Club" value={data.department_club} />
-            <ReportRow label="Academic Year" value={data.academic_year} />
-            <ReportRow label="Program Driven By" value={data.program_driven_by} />
-            <ReportRow label="Quarter" value={data.quarter} />
-            <ReportRow label="Program Type" value={data.program_type} />
-            <ReportRow label="Program Theme" value={data.program_theme} />
-            <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
-            <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
-            <ReportRow label="Time" value={`${formatTime12Hour(data.start_time)} - ${formatTime12Hour(data.end_time)}`} />
-            <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
-            <ReportRow label="Expected Participants" value={data.expected_audience} />
-            <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
-            <ReportRow label="Objective" value={data.objective} />
-            <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
-            <ReportRow label="Category" value={data.category} />
-            <ReportRow label="Target Audience" value={data.target_audience} />
-            <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
-            <ReportRow label="Coordinators" value={
-              (data.coordinator_name || []).length > 0 ? (
-                <div className="space-y-1">
-                  {(data.coordinator_name || []).map((name: string, index: number) => (
-                    <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
-                  ))}
-                </div>
-              ) : null
-            } />
-            <ReportRow label="Speakers/Resource Persons" value={
-              (data.speakers || []).length > 0 ? (
-                <div className="space-y-1">
-                  {(data.speakers || []).map((name: string, index: number) => (
-                    <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
-                  ))}
-                </div>
-              ) : null
-            } />
-            <ReportRow label="Budget Estimate" value={`₹${Number(data.budget_estimate || 0).toFixed(2)}`} />
-            <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
-            <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
-            <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
-            <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
-            <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
-            <ReportRow label="Final Remarks" value={data.remarks} />
+          {/* Bordered Content */}
+          <div className="border border-gray-400">
+            {/* Table Headers */}
+            <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
+              <div className="col-span-1">Section</div>
+              <div className="col-span-2">Details</div>
+            </div>
+
+            {/* Table Body */}
+            <div className="p-2">
+              <ReportRow label="Event Title" value={data.title} />
+              <ReportRow label="Department/Club" value={data.department_club} />
+              <ReportRow label="Academic Year" value={data.academic_year} />
+              <ReportRow label="Program Driven By" value={data.program_driven_by} />
+              <ReportRow label="Quarter" value={data.quarter} />
+              <ReportRow label="Program Type" value={data.program_type} />
+              <ReportRow label="Program Theme" value={data.program_theme} />
+              <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
+              <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
+              <ReportRow label="Time" value={`${formatTime12Hour(data.start_time)} - ${formatTime12Hour(data.end_time)}`} />
+              <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
+              <ReportRow label="Expected Participants" value={data.expected_audience} />
+              <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
+              <ReportRow label="Objective" value={data.objective} />
+              <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
+              <ReportRow label="Category" value={data.category} />
+              <ReportRow label="Target Audience" value={data.target_audience} />
+              <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
+              <ReportRow label="Coordinators" value={
+                (data.coordinator_name || []).length > 0 ? (
+                  <div className="space-y-1">
+                    {(data.coordinator_name || []).map((name: string, index: number) => (
+                      <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
+                    ))}
+                  </div>
+                ) : null
+              } />
+              <ReportRow label="Speakers/Resource Persons" value={
+                (data.speakers || []).length > 0 ? (
+                  <div className="space-y-1">
+                    {(data.speakers || []).map((name: string, index: number) => (
+                      <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
+                    ))}
+                  </div>
+                ) : null
+              } />
+              <ReportRow label="Budget Estimate" value={`₹${Number(data.budget_estimate || 0).toFixed(2)}`} />
+              <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
+              <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
+              <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
+              <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
+              <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
+              <ReportRow label="Final Remarks" value={data.remarks} />
+            </div>
+          </div>
+        </div>
+
+        {/* Signature Labels */}
+        <div className="mt-8 mb-4 grid grid-cols-4 gap-4 text-center">
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">Coordinator</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">HOD</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">DEAN</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">PRINCIPAL</span>
           </div>
         </div>
       </div>
@@ -199,7 +221,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
   const handlePrint = () => {
     if (!reportContentRef.current) return;
 
-    const printContents = reportContentRef.current.innerHTML;
+    const printContents = reportContentRef.current.outerHTML;
     
     const printableContainer = document.createElement('div');
     printableContainer.className = 'printable-container';

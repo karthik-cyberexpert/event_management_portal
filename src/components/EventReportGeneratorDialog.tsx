@@ -22,7 +22,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn, isEventFinished } from '@/lib/utils';
@@ -50,6 +50,7 @@ const socialMediaPlatforms = [
   { id: 'facebook', label: 'Facebook', icon: Facebook },
   { id: 'instagram', label: 'Instagram', icon: Instagram },
   { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+  { id: 'youtube', label: 'YouTube', icon: Youtube },
 ] as const;
 
 const formSchema = z.object({
@@ -64,6 +65,7 @@ const formSchema = z.object({
   facebook_url: z.string().url('Invalid URL').optional().or(z.literal('')),
   instagram_url: z.string().url('Invalid URL').optional().or(z.literal('')),
   linkedin_url: z.string().url('Invalid URL').optional().or(z.literal('')),
+  youtube_url: z.string().url('Invalid URL').optional().or(z.literal('')),
 });
 
 type ReportFormData = z.infer<typeof formSchema>;
@@ -148,6 +150,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       facebook_url: '',
       instagram_url: '',
       linkedin_url: '',
+      youtube_url: '',
     },
   });
 
@@ -192,6 +195,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       if (formData.facebook_url) social_media_links.facebook = formData.facebook_url;
       if (formData.instagram_url) social_media_links.instagram = formData.instagram_url;
       if (formData.linkedin_url) social_media_links.linkedin = formData.linkedin_url;
+      if (formData.youtube_url) social_media_links.youtube = formData.youtube_url;
 
       // 4. Update Event Record in DB
       await api.events.update(event.id, {
@@ -217,7 +221,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
   const handlePrint = () => {
     if (!reportRef.current) return;
-    const printContents = reportRef.current.innerHTML;
+    const printContents = reportRef.current.outerHTML;
     const printableContainer = document.createElement('div');
     printableContainer.className = 'printable-container';
     printableContainer.innerHTML = printContents;
@@ -234,129 +238,151 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     const { aiObjective, photoUrls, formData, durationHours } = reportData;
 
     return (
-      <div className="printable-report bg-white text-black p-8 font-serif" ref={reportRef}>
-        {/* Header */}
-        <header className="flex justify-between items-center border-b-2 border-black pb-2">
-          <img src="/ace.jpeg" alt="ACE Logo" className="h-28 w-28 object-contain" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">ADHIYAMAAN COLLEGE OF ENGINEERING</h1>
-            <p className="text-sm font-semibold">(An Autonomous Institution)</p>
-            <p className="text-xs">Affiliated to Anna University, Chennai</p>
-            <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
-          </div>
-          <img src="/iic.jpg" alt="IIC Logo" className="h-28 w-28 object-contain" />
-        </header>
+      <div className="printable-report bg-white text-black p-8 font-serif flex flex-col justify-between min-h-[29.7cm]" ref={reportRef}>
+        <div className="flex-1">
+          {/* Header */}
+          <header className="flex justify-between items-center border-b-2 border-black pb-2">
+            <img src="/ace.jpeg" alt="ACE Logo" className="h-28 w-28 object-contain" />
+            <div className="text-center">
+              <h1 className="text-2xl font-bold">ADHIYAMAAN COLLEGE OF ENGINEERING</h1>
+              <p className="text-sm font-semibold">(An Autonomous Institution)</p>
+              <p className="text-xs">Affiliated to Anna University, Chennai</p>
+              <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
+            </div>
+            <img src="/iic.jpg" alt="IIC Logo" className="h-28 w-28 object-contain" />
+          </header>
 
-        {/* Titles */}
-        <div className="text-center my-4">
-          <h2 className="text-xl font-bold">Institution's Innovation Council</h2>
-          <h3 className="text-lg">Activity Report Copy</h3>
+          {/* Titles */}
+          <div className="text-center my-4">
+            <h2 className="text-xl font-bold">Institution's Innovation Council</h2>
+            <h3 className="text-lg">Activity Report Copy</h3>
+          </div>
+
+          {/* Section 1: Event Details */}
+          <section className="p-2">
+            <div className="text-sm space-y-1">
+              {/* Row 1 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
+              </div>
+              {/* Row 2 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
+              </div>
+              {/* Row 3 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
+              </div>
+              {/* Row 4 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
+              </div>
+              {/* Row 5 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
+              </div>
+              {/* Row 6 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
+              </div>
+              {/* Row 7 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
+              </div>
+              {/* Row 8 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
+              </div>
+              {/* Row 9 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
+              </div>
+              {/* Row 10 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
+              </div>
+              {/* Row 11 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
+              </div>
+              {/* Row 12 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
+              </div>
+              {/* Row 13 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
+              </div>
+              {/* Row 14 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
+              </div>
+              {/* Row 15 */}
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
+              </div>
+              {/* Row 16 (Last row, no border-b) */}
+              <div className="grid grid-cols-4 pt-1">
+                <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 2: Overview */}
+          <section className="p-2 mt-4">
+            <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
+            <div className="grid grid-cols-2 gap-x-4 text-sm space-y-2">
+              <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
+              <div><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
+            </div>
+          </section>
+
+          {/* Section 3: Attachments */}
+          <section className="p-2 mt-4 page-break-before">
+            <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
+            <div className="grid grid-cols-2 gap-4">
+              {photoUrls.map((url, index) => (
+                <div key={index} className="border border-gray-300 p-1">
+                  <img src={url} alt={`Event Photo ${index + 1}`} className="w-full h-48 object-contain" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 4: Social Media */}
+          <section className="p-2 mt-4">
+            <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Promotion in Social Media</h4>
+            <table className="w-full text-sm border-collapse border border-black">
+              <thead><tr><th className="border border-black p-1">Social Media</th><th className="border border-black p-1">URL</th></tr></thead>
+              <tbody>
+                {Object.entries(reportData.formData).filter(([key]) => key.endsWith('_url') && key !== 'photos').map(([key, value]) => {
+                  if (!value) return null;
+                  const platform = key.replace('_url', '');
+                  return (<tr key={key}><td className="border border-black p-1 capitalize">{platform}</td><td className="border border-black p-1 break-all">{String(value)}</td></tr>);
+                })}
+              </tbody>
+            </table>
+          </section>
         </div>
 
-        {/* Section 1: Event Details */}
-        <section className="p-2">
-          <div className="text-sm space-y-1">
-            {/* Row 1 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
-            </div>
-            {/* Row 2 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
-            </div>
-            {/* Row 3 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
-            </div>
-            {/* Row 4 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
-            </div>
-            {/* Row 5 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
-            </div>
-            {/* Row 6 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
-            </div>
-            {/* Row 7 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
-            </div>
-            {/* Row 8 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
-            </div>
-            {/* Row 9 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
-            </div>
-            {/* Row 10 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
-            </div>
-            {/* Row 11 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
-            </div>
-            {/* Row 12 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
-            </div>
-            {/* Row 13 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
-            </div>
-            {/* Row 14 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
-            </div>
-            {/* Row 15 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-              <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
-            </div>
-            {/* Row 16 (Last row, no border-b) */}
-            <div className="grid grid-cols-4 pt-1">
-              <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
-            </div>
+        {/* Section 5: Signature Labels */}
+        <section className="mt-8 mb-4 grid grid-cols-4 gap-4 text-center">
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">Coordinator</span>
           </div>
-        </section>
-
-        {/* Section 2: Overview */}
-        <section className="p-2 mt-4">
-          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
-          <div className="grid grid-cols-2 gap-x-4 text-sm space-y-2">
-            <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
-            <div><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">HOD</span>
           </div>
-        </section>
-
-        {/* Section 3: Attachments */}
-        <section className="p-2 mt-4 page-break-before">
-          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
-          <div className="grid grid-cols-2 gap-4">
-            {photoUrls.map((url, index) => (
-              <div key={index} className="border border-gray-300 p-1">
-                <img src={url} alt={`Event Photo ${index + 1}`} className="w-full h-48 object-contain" />
-              </div>
-            ))}
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">DEAN</span>
           </div>
-        </section>
-
-        {/* Section 4: Social Media */}
-        <section className="p-2 mt-4">
-          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Promotion in Social Media</h4>
-          <table className="w-full text-sm border-collapse border border-black">
-            <thead><tr><th className="border border-black p-1">Social Media</th><th className="border border-black p-1">URL</th></tr></thead>
-            <tbody>
-              {Object.entries(reportData.formData).filter(([key]) => key.endsWith('_url') && key !== 'photos').map(([key, value]) => {
-                if (!value) return null;
-                const platform = key.replace('_url', '');
-                return (<tr key={key}><td className="border border-black p-1 capitalize">{platform}</td><td className="border border-black p-1 break-all">{String(value)}</td></tr>);
-              })}
-            </tbody>
-          </table>
+          <div className="flex flex-col items-center">
+            <div className="w-32 border-t border-black mb-1"></div>
+            <span className="text-xs font-bold uppercase">PRINCIPAL</span>
+          </div>
         </section>
       </div>
     );
@@ -443,6 +469,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                   {selectedSocialMedia.includes('facebook') && <FormField control={form.control} name="facebook_url" render={({ field }) => (<FormItem><FormLabel>Facebook URL</FormLabel><FormControl><Input {...field} placeholder="https://facebook.com/..." /></FormControl><FormMessage /></FormItem>)} />}
                   {selectedSocialMedia.includes('instagram') && <FormField control={form.control} name="instagram_url" render={({ field }) => (<FormItem><FormLabel>Instagram URL</FormLabel><FormControl><Input {...field} placeholder="https://instagram.com/..." /></FormControl><FormMessage /></FormItem>)} />}
                   {selectedSocialMedia.includes('linkedin') && <FormField control={form.control} name="linkedin_url" render={({ field }) => (<FormItem><FormLabel>LinkedIn URL</FormLabel><FormControl><Input {...field} placeholder="https://linkedin.com/..." /></FormControl><FormMessage /></FormItem>)} />}
+                  {selectedSocialMedia.includes('youtube') && <FormField control={form.control} name="youtube_url" render={({ field }) => (<FormItem><FormLabel>YouTube URL</FormLabel><FormControl><Input {...field} placeholder="https://youtube.com/..." /></FormControl><FormMessage /></FormItem>)} />}
                 </div>
               </div>
               <DialogFooter><Button type="submit" disabled={isGenerating}>{isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate & Preview Report'}</Button></DialogFooter>
