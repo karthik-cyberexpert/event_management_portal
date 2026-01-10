@@ -1,126 +1,53 @@
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
+chunk-VAMZPUBM.js?v=b871d5aa:21609 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+react-router-dom.js?v=97a9a818:4436 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ react-router-dom.js?v=97a9a818:4436
+react-router-dom.js?v=97a9a818:4436 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+warnOnce @ react-router-dom.js?v=97a9a818:4436
+favicon.ico:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+localhost:3000/api/users:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+localhost:3000/api/users:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+api.ts:16  POST http://localhost:3000/api/users 500 (Internal Server Error)
+fetchAPI @ api.ts:16
+create @ api.ts:154
+onSubmit @ AddUserDialog.tsx:115
+(anonymous) @ chunk-26SSW4J4.js?v=b871d5aa:1586
+await in (anonymous)
+callCallback2 @ chunk-VAMZPUBM.js?v=b871d5aa:3680
+invokeGuardedCallbackDev @ chunk-VAMZPUBM.js?v=b871d5aa:3705
+invokeGuardedCallback @ chunk-VAMZPUBM.js?v=b871d5aa:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-VAMZPUBM.js?v=b871d5aa:3742
+executeDispatch @ chunk-VAMZPUBM.js?v=b871d5aa:7046
+processDispatchQueueItemsInOrder @ chunk-VAMZPUBM.js?v=b871d5aa:7066
+processDispatchQueue @ chunk-VAMZPUBM.js?v=b871d5aa:7075
+dispatchEventsForPlugins @ chunk-VAMZPUBM.js?v=b871d5aa:7083
+(anonymous) @ chunk-VAMZPUBM.js?v=b871d5aa:7206
+batchedUpdates$1 @ chunk-VAMZPUBM.js?v=b871d5aa:18966
+batchedUpdates @ chunk-VAMZPUBM.js?v=b871d5aa:3585
+dispatchEventForPluginEventSystem @ chunk-VAMZPUBM.js?v=b871d5aa:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-VAMZPUBM.js?v=b871d5aa:5484
+dispatchEvent @ chunk-VAMZPUBM.js?v=b871d5aa:5478
+dispatchDiscreteEvent @ chunk-VAMZPUBM.js?v=b871d5aa:5455
+api.ts:16  POST http://localhost:3000/api/users 500 (Internal Server Error)
+fetchAPI @ api.ts:16
+create @ api.ts:154
+onSubmit @ AddUserDialog.tsx:115
+(anonymous) @ chunk-26SSW4J4.js?v=b871d5aa:1586
+await in (anonymous)
+callCallback2 @ chunk-VAMZPUBM.js?v=b871d5aa:3680
+invokeGuardedCallbackDev @ chunk-VAMZPUBM.js?v=b871d5aa:3705
+invokeGuardedCallback @ chunk-VAMZPUBM.js?v=b871d5aa:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-VAMZPUBM.js?v=b871d5aa:3742
+executeDispatch @ chunk-VAMZPUBM.js?v=b871d5aa:7046
+processDispatchQueueItemsInOrder @ chunk-VAMZPUBM.js?v=b871d5aa:7066
+processDispatchQueue @ chunk-VAMZPUBM.js?v=b871d5aa:7075
+dispatchEventsForPlugins @ chunk-VAMZPUBM.js?v=b871d5aa:7083
+(anonymous) @ chunk-VAMZPUBM.js?v=b871d5aa:7206
+batchedUpdates$1 @ chunk-VAMZPUBM.js?v=b871d5aa:18966
+batchedUpdates @ chunk-VAMZPUBM.js?v=b871d5aa:3585
+dispatchEventForPluginEventSystem @ chunk-VAMZPUBM.js?v=b871d5aa:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-VAMZPUBM.js?v=b871d5aa:5484
+dispatchEvent @ chunk-VAMZPUBM.js?v=b871d5aa:5478
+dispatchDiscreteEvent @ chunk-VAMZPUBM.js?v=b871d5aa:5455
 
-CREATE TABLE public.clubs (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT clubs_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.departments (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  degree USER-DEFINED NOT NULL,
-  CONSTRAINT departments_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.event_history (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  event_id uuid NOT NULL,
-  changed_by uuid,
-  old_status USER-DEFINED,
-  new_status USER-DEFINED NOT NULL,
-  remarks text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT event_history_pkey PRIMARY KEY (id),
-  CONSTRAINT event_history_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id),
-  CONSTRAINT event_history_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.event_reports (
-  event_id uuid NOT NULL,
-  final_report_remarks text NOT NULL,
-  student_participants integer DEFAULT 0,
-  faculty_participants integer DEFAULT 0,
-  external_participants integer DEFAULT 0,
-  social_media_links jsonb,
-  report_photo_urls ARRAY,
-  submitted_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT event_reports_pkey PRIMARY KEY (event_id),
-  CONSTRAINT event_reports_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id)
-);
-CREATE TABLE public.events (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  description text,
-  venue_id uuid,
-  event_date date NOT NULL,
-  start_time time without time zone NOT NULL,
-  end_time time without time zone NOT NULL,
-  expected_audience integer,
-  status USER-DEFINED NOT NULL DEFAULT 'pending_hod'::event_status,
-  remarks text,
-  submitted_by uuid NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  department_club text,
-  coordinator_name ARRAY,
-  coordinator_contact ARRAY,
-  mode_of_event text,
-  category ARRAY,
-  objective text,
-  sdg_alignment ARRAY,
-  target_audience ARRAY,
-  proposed_outcomes text,
-  speakers ARRAY,
-  speaker_details ARRAY,
-  budget_estimate numeric,
-  funding_source ARRAY,
-  promotion_strategy ARRAY,
-  hod_approval_at timestamp with time zone,
-  dean_approval_at timestamp with time zone,
-  principal_approval_at timestamp with time zone,
-  unique_code text UNIQUE,
-  other_venue_details text,
-  end_date date,
-  speaker_contacts ARRAY,
-  poster_url text,
-  academic_year text,
-  program_driven_by text,
-  quarter text,
-  program_type text,
-  program_theme text,
-  activity_lead_by text,
-  activity_duration_hours integer,
-  coordinator_resubmission_reason text,
-  CONSTRAINT events_pkey PRIMARY KEY (id),
-  CONSTRAINT events_venue_id_fkey FOREIGN KEY (venue_id) REFERENCES public.venues(id),
-  CONSTRAINT events_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES auth.users(id),
-  CONSTRAINT fk_submitted_by_profile FOREIGN KEY (submitted_by) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.notifications (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  event_id uuid,
-  message text NOT NULL,
-  is_read boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT notifications_pkey PRIMARY KEY (id),
-  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
-  CONSTRAINT notifications_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id)
-);
-CREATE TABLE public.professional_societies (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT professional_societies_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.profiles (
-  id uuid NOT NULL,
-  first_name text,
-  last_name text,
-  role USER-DEFINED NOT NULL,
-  department text,
-  updated_at timestamp with time zone DEFAULT now(),
-  club text,
-  professional_society text,
-  CONSTRAINT profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.venues (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  capacity integer,
-  location text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT venues_pkey PRIMARY KEY (id)
-);
+
+Failed to create user: data and salt arguments required
