@@ -55,6 +55,17 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.notifications.markAllAsRead();
+      setNotifications([]);
+      setUnreadCount(0);
+      setIsPopoverOpen(false);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
@@ -68,8 +79,18 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0 shadow-lg border-muted" align="end">
-        <div className="p-3 border-b bg-muted/30">
+        <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
           <h4 className="font-semibold text-sm">Notifications</h4>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs h-7 px-2 font-bold text-primary hover:text-primary-foreground hover:bg-primary transition-all"
+              onClick={handleMarkAllAsRead}
+            >
+              Mark all as read
+            </Button>
+          )}
         </div>
         <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (

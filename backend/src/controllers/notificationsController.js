@@ -37,6 +37,24 @@ const markAsRead = async (req, res, next) => {
 };
 
 /**
+ * Mark all notifications as read for current user
+ */
+const markAllAsRead = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+
+    await db.query(
+      'UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE',
+      [userId]
+    );
+
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Utility function to create a notification (internal use)
  */
 const createNotification = async (userId, eventId, message) => {
@@ -55,5 +73,6 @@ const createNotification = async (userId, eventId, message) => {
 module.exports = {
   getNotifications,
   markAsRead,
+  markAllAsRead,
   createNotification
 };

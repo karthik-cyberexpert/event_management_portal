@@ -198,5 +198,6 @@ export const api = {
   notifications: {
     list: () => fetchAPI('/notifications'),
     markAsRead: (id: string) => fetchAPI(`/notifications/${id}/read`, { method: 'PUT' }),
+    markAllAsRead: () => fetchAPI('/notifications/read-all', { method: 'PUT' }),
   },
 };

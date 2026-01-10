@@ -65,6 +65,11 @@ const AllEvents = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
 
+  const isApprover = useMemo(() => {
+    if (!profile) return false;
+    return ['hod', 'dean', 'principal'].includes(profile.role);
+  }, [profile]);
+
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {

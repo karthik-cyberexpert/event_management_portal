@@ -79,7 +79,7 @@ const IrDashboard = () => {
     return status === 'pending_dean' || status === 'returned_to_dean';
   };
 
-  const eventDays = allViewableEvents.map(e => new Date(e.event_date));
+  const eventDays = allViewableEvents.filter(e => e.status === 'approved').map(e => new Date(e.event_date));
 
   return (
     <div className="space-y-8 max-w-full overflow-hidden animate-in fade-in duration-700">

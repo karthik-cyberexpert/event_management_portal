@@ -104,7 +104,13 @@ const CoordinatorDashboard = () => {
   const pendingEvents = myEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
   const returnedEvents = myEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
   const approvedEvents = myEvents.filter(e => e.status === 'approved');
-  const eventDays = allEvents.map(e => new Date(e.event_date));
+  const approvedDays = allEvents.filter(e => e.status === 'approved').map(e => new Date(e.event_date));
+  const pendingDays = allEvents.filter(e => 
+    e.submitted_by === user.id && 
+    (e.status.startsWith('pending') || e.status === 'resubmitted' || e.status.startsWith('returned')) &&
+    e.status !== 'approved' && e.status !== 'rejected'
+  ).map(e => new Date(e.event_date));
+  const rejectedDays = allEvents.filter(e => e.submitted_by === user.id && e.status === 'rejected').map(e => new Date(e.event_date));
 
   const renderEventTable = (eventsList: any[], title: string) => (
     <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg h-full flex flex-col overflow-hidden group">
@@ -281,10 +287,14 @@ const CoordinatorDashboard = () => {
                     onDayClick={() => navigate('/all-events?tab=calendar')}
                     className="transform scale-110 origin-center py-2"
                     modifiers={{
-                      event: eventDays
+                      approved: approvedDays,
+                      pending: pendingDays,
+                      rejected: rejectedDays
                     }}
                     modifiersStyles={{
-                      event: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
+                      approved: { backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+                      pending: { backgroundColor: '#f1c40f', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+                      rejected: { backgroundColor: '#e74c3c', color: 'white', fontWeight: 'bold', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
                     }}
                   />
                 </div>
