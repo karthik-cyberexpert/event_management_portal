@@ -1,5 +1,12 @@
 // API client for backend communication
-const API_BASE = 'http://localhost:3000/api';
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || 
+   window.location.hostname === '127.0.0.1' || 
+   window.location.hostname === '');
+
+const API_BASE = isLocalhost 
+  ? 'http://localhost:3000/api'
+  : `http://${window.location.hostname}:3000/api`;
 
 // Helper to get token from localStorage
 const getToken = () => localStorage.getItem('token');
