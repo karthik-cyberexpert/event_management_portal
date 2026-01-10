@@ -31,7 +31,8 @@ const createUser = async (req, res, next) => {
     
     await connection.beginTransaction();
     
-    const hashedPassword = await hashPassword(password);
+    const finalPassword = password || 'welcome123';
+    const hashedPassword = await hashPassword(finalPassword);
     const userId = uuidv4();
     
     await connection.query(
