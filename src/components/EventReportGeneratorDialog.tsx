@@ -22,10 +22,12 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
+import { Download, UploadCloud, Loader2, Twitter, Facebook, Instagram, Linkedin, Youtube, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn, isEventFinished } from '@/lib/utils';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
@@ -75,6 +77,7 @@ type ReportData = {
   photoUrls: string[];
   formData: ReportFormData;
   durationHours: number;
+  password?: string;
 };
 
 type EventReportGeneratorDialogProps = {
@@ -164,6 +167,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
             youtube_url: report.social_media_links?.youtube || '',
           },
           durationHours: event.activity_duration_hours || calculateDurationHours(event),
+          password: report.report_password,
         };
 
         // Try to regenerate AI objective if empty, or use existing event objective
@@ -268,7 +272,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         })
       ]);
 
-      setReportData({ aiObjective, photoUrls, formData, durationHours });
+      const savedReport = await api.reports.get(event.id);
+
+      setReportData({ aiObjective, photoUrls, formData, durationHours, password: savedReport.report_password });
       setIsReadOnly(true); // Once generated, it becomes read-only in this session
       setStep(2);
       toast.success('Report generated and saved successfully.');
@@ -292,6 +298,48 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       window.print();
       document.body.removeChild(printableContainer);
     }, 500);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!reportRef.current || !reportData?.password) return;
+    
+    setIsGenerating(true);
+    const toastId = toast.loading("Generating secure PDF...");
+    
+    try {
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        encryption: {
+          userPassword: reportData.password,
+          ownerPassword: reportData.password,
+          userPermissions: ['print', 'modify', 'copy', 'annot-forms']
+        }
+      });
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      pdf.save(`Activity_Report_${event.title.replace(/\s+/g, '_')}.pdf`);
+      toast.success("Secure PDF downloaded successfully!", { id: toastId });
+    } catch (error: any) {
+      console.error("PDF Error:", error);
+      toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`, { id: toastId });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const renderReportContent = () => {
@@ -541,10 +589,27 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
         {step === 2 && (
           <>
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 print:hidden space-y-2">
+              <div className="flex items-center">
+                <Lock className="h-5 w-5 text-amber-500 mr-2" />
+                <p className="text-sm text-amber-700 font-medium">
+                  This report is password protected. Password: <span className="font-mono bg-amber-100 px-2 py-0.5 rounded border border-amber-200 select-all">{reportData?.password}</span>
+                </p>
+              </div>
+              <div className="flex items-start">
+                <AlertCircle className="h-4 w-4 text-amber-500 mr-2 mt-0.5" />
+                <p className="text-[11px] text-amber-600 leading-tight">
+                  <span className="font-bold">Security Note:</span> The "System Save" button below uses browser print which <span className="underline">cannot</span> be password protected. Use "Download Protected PDF" for a secure version.
+                </p>
+              </div>
+            </div>
             {renderReportContent()}
             <DialogFooter className="print:hidden">
-              {!isReadOnly && <Button type="button" variant="outline" onClick={() => setStep(1)}>Back to Edit</Button>}
-              <Button onClick={handlePrint}><Download className="mr-2 h-4 w-4" /> Print / Save as PDF</Button>
+              {!isReadOnly && <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isGenerating}>Back to Edit</Button>}
+              <Button onClick={handleDownloadPDF} disabled={isGenerating} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200 shadow-lg">
+                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Download Password Protected PDF
+              </Button>
             </DialogFooter>
           </>
         )}

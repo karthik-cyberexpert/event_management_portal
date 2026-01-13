@@ -17,7 +17,9 @@ import {
   List,
   MoreVertical,
   Download,
-  CalendarDays
+  CalendarDays,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
@@ -98,6 +100,17 @@ const CoordinatorDashboard = () => {
     }
     setSelectedEvent(event);
     setIsReportGeneratorOpen(true);
+  };
+
+  const handleViewPassword = async (event: any) => {
+    try {
+      const report = await api.reports.get(event.id);
+      toast.info(`The report password for "${event.title}" is: ${report.report_password}`, {
+        duration: 10000,
+      });
+    } catch (error) {
+      toast.error("Could not retrieve report password.");
+    }
   };
 
   const myEvents = allEvents.filter(e => e.submitted_by === user.id);
@@ -191,6 +204,11 @@ const CoordinatorDashboard = () => {
                             ) : (
                               <><PlusCircle className="mr-2 h-4 w-4" /> Generate Report</>
                             )}
+                          </DropdownMenuItem>
+                        )}
+                        {event.status === 'approved' && event.has_report && (
+                          <DropdownMenuItem onClick={() => handleViewPassword(event)} className="cursor-pointer text-amber-600 focus:text-amber-700 focus:bg-amber-50">
+                            <Eye className="mr-2 h-4 w-4" /> View Password
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

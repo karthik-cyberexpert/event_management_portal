@@ -18,6 +18,20 @@ const getReport = async (req, res, next) => {
     
     // Parse JSON fields
     const report = reports[0];
+    
+    // Auto-generate password if missing (for legacy/existing reports)
+    if (!report.report_password) {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const newPassword = `ACE-${randomNum}`;
+      
+      await db.query(
+        'UPDATE event_reports SET report_password = ? WHERE event_id = ?',
+        [newPassword, eventId]
+      );
+      report.report_password = newPassword;
+      console.log(`Auto-generated password for legacy report: ${eventId}`);
+    }
+
     if (report.social_media_links && typeof report.social_media_links === 'string') {
       report.social_media_links = JSON.parse(report.social_media_links);
     }
@@ -53,12 +67,19 @@ const upsertReport = async (req, res, next) => {
 
     // Check if report exists
     const [existing] = await db.query(
-      'SELECT event_id FROM event_reports WHERE event_id = ?',
+      'SELECT event_id, report_password FROM event_reports WHERE event_id = ?',
       [eventId]
     );
 
     const socialMediaJSON = JSON.stringify(social_media_links || {});
     const photosJSON = JSON.stringify(report_photo_urls || []);
+    
+    // Generate password if not exists
+    let password = existing.length > 0 ? existing[0].report_password : null;
+    if (!password) {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      password = `ACE-${randomNum}`;
+    }
 
     if (existing.length > 0) {
       // Update
@@ -88,8 +109,8 @@ const upsertReport = async (req, res, next) => {
       // Insert
       await db.query(
         `INSERT INTO event_reports 
-         (event_id, final_report_remarks, student_participants, faculty_participants, external_participants, social_media_links, report_photo_urls, activity_lead_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (event_id, final_report_remarks, student_participants, faculty_participants, external_participants, social_media_links, report_photo_urls, activity_lead_by, report_password)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           eventId,
           final_report_remarks,
@@ -98,12 +119,13 @@ const upsertReport = async (req, res, next) => {
           external_participants || 0,
           socialMediaJSON,
           photosJSON,
-          activity_lead_by
+          activity_lead_by,
+          password
         ]
       );
     }
 
-    res.json({ message: 'Report saved successfully' });
+    res.json({ message: 'Report saved successfully', password });
   } catch (error) {
     next(error);
   }

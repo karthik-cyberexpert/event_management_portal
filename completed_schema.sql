@@ -196,6 +196,7 @@ CREATE TABLE `event_reports` (
   `social_media_links` JSON DEFAULT NULL,
   `report_photo_urls` JSON DEFAULT NULL,
   `activity_lead_by` VARCHAR(255) DEFAULT NULL,
+  `report_password` VARCHAR(255) DEFAULT NULL,
   `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),
   CONSTRAINT `event_reports_event_id_fkey` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
