@@ -186,7 +186,11 @@ const CoordinatorDashboard = () => {
                           )}
                         {event.status === 'approved' && (
                           <DropdownMenuItem onClick={() => handleDownloadReport(event)} className="cursor-pointer text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50">
-                            <Download className="mr-2 h-4 w-4" /> Generate Report
+                            {event.has_report ? (
+                              <><Download className="mr-2 h-4 w-4" /> Download Report</>
+                            ) : (
+                              <><PlusCircle className="mr-2 h-4 w-4" /> Generate Report</>
+                            )}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

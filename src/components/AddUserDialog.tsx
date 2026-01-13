@@ -60,9 +60,9 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       first_name: '',
       last_name: '',
       email: '',
-      department: '',
-      club: '',
-      professional_society: '',
+      department: '--none--',
+      club: '--none--',
+      professional_society: '--none--',
     },
   });
 
@@ -108,17 +108,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   };
 
   const role = form.watch('role');
-  const departmentValue = form.watch('department');
-  const clubValue = form.watch('club');
-  const societyValue = form.watch('professional_society');
-
-  const showDepartmentField = role === 'coordinator' || role === 'hod';
-  const showClubField = role === 'coordinator';
-  const showSocietyField = role === 'coordinator';
-  
-  const isDepartmentSelected = departmentValue && departmentValue !== '--none--';
-  const isClubSelected = clubValue && clubValue !== '--none--';
-  const isSocietySelected = societyValue && societyValue !== '--none--';
+  const showAssignments = role === 'coordinator' || role === 'hod';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -137,14 +127,12 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean IR</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
-            {showDepartmentField && (
-              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent>{!isClubSelected && !isSocietySelected && <SelectItem value="--none--">None</SelectItem>}{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-            )}
-            {showClubField && (
-              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && !isSocietySelected && <SelectItem value="--none--">None</SelectItem>}{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-            )}
-            {showSocietyField && (
-              <FormField control={form.control} name="professional_society" render={({ field }) => (<FormItem><FormLabel>Professional Society</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a society" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && !isClubSelected && <SelectItem value="--none--">None</SelectItem>}{societies.map((society) => (<SelectItem key={society.id} value={society.name}>{society.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            {showAssignments && (
+              <>
+                <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department Assignment</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose department" /></SelectTrigger></FormControl><SelectContent><SelectItem value="--none--">-- None --</SelectItem>{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club Assignment</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose club" /></SelectTrigger></FormControl><SelectContent><SelectItem value="--none--">-- None --</SelectItem>{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="professional_society" render={({ field }) => (<FormItem><FormLabel>Professional Society Assignment</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose society" /></SelectTrigger></FormControl><SelectContent><SelectItem value="--none--">-- None --</SelectItem>{societies.map((society) => (<SelectItem key={society.id} value={society.name}>{society.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              </>
             )}
 
             <DialogFooter>

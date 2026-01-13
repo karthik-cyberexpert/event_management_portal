@@ -161,6 +161,7 @@ export const api = {
     create: (data: any) => fetchAPI('/users', { method: 'POST', body: JSON.stringify(data) }),
     bulkCreate: (users: any[]) => fetchAPI('/users/bulk', { method: 'POST', body: JSON.stringify({ users }) }),
     update: (id: string, data: any) => fetchAPI(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    resetPassword: (id: string) => fetchAPI(`/users/${id}/reset-password`, { method: 'PUT' }),
   },
 
   // Uploads
@@ -206,5 +207,15 @@ export const api = {
     list: () => fetchAPI('/notifications'),
     markAsRead: (id: string) => fetchAPI(`/notifications/${id}/read`, { method: 'PUT' }),
     markAllAsRead: () => fetchAPI('/notifications/read-all', { method: 'PUT' }),
+  },
+
+  // Reports
+  reports: {
+    get: (eventId: string) => fetchAPI(`/reports/${eventId}`),
+    upsert: (eventId: string, data: any) =>
+      fetchAPI(`/reports/${eventId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 };

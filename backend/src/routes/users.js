@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, createUser, bulkCreateUsers, updateUser } = require('../controllers/usersController');
+const { getUsers, createUser, bulkCreateUsers, updateUser, resetPassword } = require('../controllers/usersController');
 const { authenticate, authorize } = require('../middleware/auth');
 
 router.use(authenticate);
@@ -10,5 +10,6 @@ router.get('/', getUsers);
 router.post('/', createUser);
 router.post('/bulk', bulkCreateUsers);
 router.put('/:id', updateUser);
+router.put('/:id/reset-password', resetPassword);
 
 module.exports = router;

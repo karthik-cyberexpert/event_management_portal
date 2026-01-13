@@ -52,7 +52,11 @@ const HodDashboard = () => {
       
       const hodEvents = data.filter((event: any) => 
         (event.status === 'pending_hod' || event.status === 'returned_to_hod' || event.status === 'resubmitted') &&
-        (event.department === profile.department || event.department_club === profile.department)
+        (
+          (profile.department && (event.department === profile.department || event.department_club === profile.department)) ||
+          (profile.club && event.department_club === profile.club) ||
+          (profile.professional_society && event.department_club === profile.professional_society)
+        )
       );
       
       setEvents(hodEvents);

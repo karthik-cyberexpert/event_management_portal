@@ -125,6 +125,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [step, setStep] = useState(1); // 1: Form, 2: Preview
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   
   const durationHours = useMemo(() => calculateDurationHours(event), [event]);
@@ -133,7 +135,53 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     if (isOpen && event && !isEventFinished(event)) {
       toast.error('Cannot access report generator for unfinished events.');
       onClose();
+      return;
     }
+
+    const fetchExistingReport = async () => {
+      if (!isOpen || !event?.id || !event.has_report) return;
+      
+      setIsLoadingReport(true);
+      try {
+        const report = await api.reports.get(event.id);
+        
+        // Prepare data for preview
+        const formattedReportData: ReportData = {
+          aiObjective: event.objective || '', // Fallback or fetch from AI if needed, but usually we save it
+          photoUrls: report.report_photo_urls || [],
+          formData: {
+            student_participants: report.student_participants,
+            faculty_participants: report.faculty_participants,
+            external_participants: report.external_participants,
+            activity_lead_by: report.activity_lead_by || 'Institute Council', // Fallback if missing
+            final_report_remarks: report.final_report_remarks,
+            photos: [], // Files aren't needed in read-only mode
+            social_media_selection: Object.keys(report.social_media_links || {}),
+            twitter_url: report.social_media_links?.twitter || '',
+            facebook_url: report.social_media_links?.facebook || '',
+            instagram_url: report.social_media_links?.instagram || '',
+            linkedin_url: report.social_media_links?.linkedin || '',
+            youtube_url: report.social_media_links?.youtube || '',
+          },
+          durationHours: event.activity_duration_hours || calculateDurationHours(event),
+        };
+
+        // Try to regenerate AI objective if empty, or use existing event objective
+        if (!formattedReportData.aiObjective && (event.title || event.description)) {
+           // We might want to keep the AI generation logic here if it wasn't saved in event.objective
+        }
+
+        setReportData(formattedReportData);
+        setIsReadOnly(true);
+        setStep(2);
+      } catch (error) {
+        console.error('Failed to fetch existing report:', error);
+      } finally {
+        setIsLoadingReport(false);
+      }
+    };
+
+    fetchExistingReport();
   }, [isOpen, event, onClose]);
 
   const form = useForm<ReportFormData>({
@@ -197,20 +245,33 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       if (formData.linkedin_url) social_media_links.linkedin = formData.linkedin_url;
       if (formData.youtube_url) social_media_links.youtube = formData.youtube_url;
 
-      // 4. Update Event Record in DB
-      await api.events.update(event.id, {
-        student_participants: formData.student_participants,
-        faculty_participants: formData.faculty_participants,
-        external_participants: formData.external_participants,
-        activity_lead_by: formData.activity_lead_by,
-        activity_duration_hours: durationHours,
-        final_report_remarks: formData.final_report_remarks,
-        report_photo_urls: photoUrls,
-        social_media_links,
-      });
+      // 4. Update Event Record (legacy, but keep for consistency) and Save to event_reports
+      await Promise.all([
+        api.events.update(event.id, {
+          student_participants: formData.student_participants,
+          faculty_participants: formData.faculty_participants,
+          external_participants: formData.external_participants,
+          activity_lead_by: formData.activity_lead_by,
+          activity_duration_hours: durationHours,
+          final_report_remarks: formData.final_report_remarks,
+          report_photo_urls: photoUrls,
+          social_media_links,
+        }),
+        api.reports.upsert(event.id, {
+          final_report_remarks: formData.final_report_remarks,
+          student_participants: formData.student_participants,
+          faculty_participants: formData.faculty_participants,
+          external_participants: formData.external_participants,
+          social_media_links,
+          report_photo_urls: photoUrls,
+          activity_lead_by: formData.activity_lead_by, // Adding this to the body as well
+        })
+      ]);
 
       setReportData({ aiObjective, photoUrls, formData, durationHours });
+      setIsReadOnly(true); // Once generated, it becomes read-only in this session
       setStep(2);
+      toast.success('Report generated and saved successfully.');
     } catch (e: any) {
       toast.error(`Report generation failed: ${e.message}`);
       console.error(e);
@@ -238,8 +299,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     const { aiObjective, photoUrls, formData, durationHours } = reportData;
 
     return (
-      <div className="printable-report bg-white text-black p-8 font-serif flex flex-col justify-between min-h-[29.7cm]" ref={reportRef}>
-        <div className="flex-1">
+      <div className="printable-report bg-white text-black p-8 font-serif flex flex-col min-h-[29.7cm]" ref={reportRef}>
+        <div className="flex-grow">
           {/* Header */}
           <header className="flex justify-between items-center border-b-2 border-black pb-2">
             <img src="/ace.jpeg" alt="ACE Logo" className="h-28 w-28 object-contain" />
@@ -366,7 +427,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         </div>
 
         {/* Section 5: Signature Labels */}
-        <section className="mt-8 mb-4 grid grid-cols-4 gap-4 text-center">
+        <section className="mt-auto pt-12 pb-4 grid grid-cols-4 gap-4 text-center">
           <div className="flex flex-col items-center">
             <div className="w-32 border-t border-black mb-1"></div>
             <span className="text-xs font-bold uppercase">Coordinator</span>
@@ -391,6 +452,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const handleClose = () => {
     setStep(1);
     setReportData(null);
+    setIsReadOnly(false);
     form.reset();
     onClose();
   };
@@ -481,7 +543,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           <>
             {renderReportContent()}
             <DialogFooter className="print:hidden">
-              <Button type="button" variant="outline" onClick={() => setStep(1)}>Back to Edit</Button>
+              {!isReadOnly && <Button type="button" variant="outline" onClick={() => setStep(1)}>Back to Edit</Button>}
               <Button onClick={handlePrint}><Download className="mr-2 h-4 w-4" /> Print / Save as PDF</Button>
             </DialogFooter>
           </>

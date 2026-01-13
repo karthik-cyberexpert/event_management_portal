@@ -109,21 +109,55 @@ const bulkCreateUsers = async (req, res, next) => {
  * Update user
  */
 const updateUser = async (req, res, next) => {
+  const connection = await db.getConnection();
   try {
     const { id } = req.params;
-    const { firstName, lastName, role, department, club, professionalSociety } = req.body;
+    const { email, firstName, lastName, role, department, club, professionalSociety } = req.body;
     
-    await db.query(
+    await connection.beginTransaction();
+
+    if (email) {
+      await connection.query(
+        'UPDATE users SET email = ? WHERE id = ?',
+        [email, id]
+      );
+    }
+
+    await connection.query(
       `UPDATE profiles 
        SET first_name = ?, last_name = ?, role = ?, department = ?, club = ?, professional_society = ?
        WHERE id = ?`,
       [firstName, lastName, role, department, club, professionalSociety, id]
     );
     
+    await connection.commit();
     res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Reset user password to default
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const defaultPassword = 'welcome123';
+    const hashedPassword = await hashPassword(defaultPassword);
+    
+    await db.query(
+      'UPDATE users SET encrypted_password = ?, is_onboarded = 0 WHERE id = ?',
+      [hashedPassword, id]
+    );
+    
+    res.json({ message: 'Password reset successfully to welcome123' });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { getUsers, createUser, bulkCreateUsers, updateUser };
+module.exports = { getUsers, createUser, bulkCreateUsers, updateUser, resetPassword };

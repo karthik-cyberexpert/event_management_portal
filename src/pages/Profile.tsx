@@ -25,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { Lock, ShieldCheck, KeyRound } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -238,7 +239,7 @@ const ProfilePage = () => {
                        Current Password
                     </FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter current password" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                      <PasswordInput placeholder="Enter current password" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -254,7 +255,7 @@ const ProfilePage = () => {
                          New Password
                       </FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                        <PasswordInput placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -269,7 +270,7 @@ const ProfilePage = () => {
                          Confirm New Password
                       </FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
+                        <PasswordInput placeholder="••••••••" {...field} className="rounded-xl border-slate-200 h-12 font-medium" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

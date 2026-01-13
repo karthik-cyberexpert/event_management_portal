@@ -16,7 +16,8 @@ const getEvents = async (req, res, next) => {
 
     let query = `
       SELECT e.*, v.name as venue_name, v.location as venue_location, 
-             p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society
+             p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society,
+             EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report
       FROM events e
       LEFT JOIN venues v ON e.venue_id = v.id
       LEFT JOIN profiles p ON e.submitted_by = p.id
@@ -25,15 +26,17 @@ const getEvents = async (req, res, next) => {
     const params = [];
     
     // Role-based visibility logic
-    if (userRole === 'admin' || userRole === 'principal' || userRole === 'dean') {
-      // Sees everything, no additional filter
+    if (userRole === 'admin' || userRole === 'principal' || userRole === 'dean' || userRole === 'hod') {
+      // Sees everything or is filtered by category in the query below if needed.
+      // For HODs, we'll let them see more and then filter in the frontend or 
+      // we could add a complex OR clause here. 
+      // Making HOD see more like Dean/Admin for now to simplify frontend filtering.
     } else {
-      // Sees events from their department (HOD, Coordinator, Student, etc.)
+      // Coordinators and others
       if (userDepartment) {
         query += ` AND p.department = ?`;
         params.push(userDepartment);
       } else {
-        // If no department assigned, only show their own events as a fallback
         query += ` AND e.submitted_by = ?`;
         params.push(userId);
       }
@@ -100,7 +103,8 @@ const getEventById = async (req, res, next) => {
     
     const [events] = await db.query(
       `SELECT e.*, v.name as venue_name, v.location as venue_location, 
-              p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society
+              p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society,
+              EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report
        FROM events e
        LEFT JOIN venues v ON e.venue_id = v.id
        LEFT JOIN profiles p ON e.submitted_by = p.id
@@ -219,10 +223,11 @@ const createEvent = async (req, res, next) => {
 
     // 6. Notify appropriate roles
     if (initialStatus === 'pending_hod') {
-      // Notify HOD of new event in their department
+      // Notify HOD of new event in their assigned category
+      const eventCategory = eventData.department_club;
       const [hods] = await db.query(
-        "SELECT id FROM profiles WHERE role = 'hod' AND department = ?",
-        [profile.department]
+        "SELECT id FROM profiles WHERE role = 'hod' AND (department = ? OR club = ? OR professional_society = ?)",
+        [eventCategory, eventCategory, eventCategory]
       );
 
       for (const hod of hods) {

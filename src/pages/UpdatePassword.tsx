@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// TODO: Replace with API client - import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Input } from '@/components/ui/input';
 import {
   Card,
@@ -33,7 +34,7 @@ const updatePasswordSchema = z.object({
 });
 
 const UpdatePassword = () => {
-  const { isPasswordRecovery } = useAuth();
+  const { isPasswordRecovery } = useAuth() as any; // Cast to any to bypass missing type if needed
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -86,7 +87,7 @@ const UpdatePassword = () => {
                   <FormItem>
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <PasswordInput placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -99,7 +100,7 @@ const UpdatePassword = () => {
                   <FormItem>
                     <FormLabel>Confirm New Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <PasswordInput placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

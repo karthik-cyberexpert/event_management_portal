@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { ShieldCheck, Lock, ArrowRight } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const onboardingSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -90,8 +91,7 @@ const OnboardingPage = () => {
                       <Lock className="w-3 h-3" /> New Password
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
+                      <PasswordInput 
                         placeholder="••••••••" 
                         {...field} 
                         className="h-12 rounded-xl border-slate-200 focus:ring-primary/20 bg-slate-50/50 font-medium transition-all"
@@ -110,8 +110,7 @@ const OnboardingPage = () => {
                       <ShieldCheck className="w-3 h-3" /> Confirm Password
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
+                      <PasswordInput 
                         placeholder="••••••••" 
                         {...field} 
                         className="h-12 rounded-xl border-slate-200 focus:ring-primary/20 bg-slate-50/50 font-medium transition-all"

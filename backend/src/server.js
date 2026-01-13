@@ -35,6 +35,7 @@ const usersRoutes = require('./routes/users');
 const uploadRoutes = require('./routes/uploads');
 const aiRoutes = require('./routes/ai');
 const notificationsRoutes = require('./routes/notifications');
+const reportsRoutes = require('./routes/reports');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
@@ -46,6 +47,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 
 // Error handling

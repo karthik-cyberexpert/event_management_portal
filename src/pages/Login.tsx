@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
@@ -19,7 +20,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -35,19 +35,10 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      
-      toast({
-        title: 'Login successful',
-        description: 'Welcome back!',
-      });
-      
+      toast.success('Login successful. Welcome back!');
       navigate('/');
     } catch (error: any) {
-      toast({
-        title: 'Login failed',
-        description: error.message || 'Invalid credentials',
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Invalid credentials. Please check your email and password.');
     } finally {
       setIsLoading(false);
     }
@@ -79,9 +70,8 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="••••••••"
                 {...register('password')}
                 disabled={isLoading}

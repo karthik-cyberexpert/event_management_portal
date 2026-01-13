@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Edit, PlusCircle, Upload } from 'lucide-react';
+import { Edit, PlusCircle, Upload, MoreVertical, Lock } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -13,6 +13,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import UserDialog from '@/components/UserDialog';
 import AddUserDialog from '@/components/AddUserDialog';
 import BulkUserUploadDialog from '@/components/BulkUserUploadDialog';
@@ -25,7 +32,7 @@ type UserWithEmail = Profile & {
 
 const ALL_ROLES = ['coordinator', 'hod', 'dean', 'principal', 'admin'] as const;
 type Role = typeof ALL_ROLES[number];
-type CoordinatorFilter = 'department' | 'club' | 'society' | 'direct';
+type AssignmentFilter = 'department' | 'club' | 'society' | 'direct';
 
 const roleDisplayMap: Record<Role, string> = {
   coordinator: 'Coordinators',
@@ -44,7 +51,7 @@ const ManageUsers = () => {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   
   const [activeRole, setActiveRole] = useState<Role>('coordinator');
-  const [coordinatorFilter, setCoordinatorFilter] = useState<CoordinatorFilter>('department');
+  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('department');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -69,39 +76,46 @@ const ManageUsers = () => {
     setIsUserDialogOpen(true);
   };
 
+  const handleResetPassword = async (user: UserWithEmail) => {
+    if (!confirm(`Are you sure you want to reset password for ${user.first_name} ${user.last_name}? It will be reset to "welcome123" and the user will be forced to change it on their next login.`)) {
+      return;
+    }
+
+    try {
+      await api.users.resetPassword(user.id);
+      toast.success(`Password for ${user.first_name} reset to welcome123`);
+    } catch (error: any) {
+      toast.error(`Failed to reset password: ${error.message}`);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     const roleFiltered = users.filter(user => user.role === activeRole);
 
-    if (activeRole === 'coordinator') {
-      if (coordinatorFilter === 'department') return roleFiltered.filter(user => user.department);
-      if (coordinatorFilter === 'club') return roleFiltered.filter(user => user.club);
-      if (coordinatorFilter === 'society') return roleFiltered.filter(user => user.professional_society);
-      if (coordinatorFilter === 'direct') return roleFiltered.filter(user => !user.department && !user.club && !user.professional_society);
+    if (activeRole === 'coordinator' || activeRole === 'hod') {
+      if (assignmentFilter === 'department') return roleFiltered.filter(user => user.department);
+      if (assignmentFilter === 'club') return roleFiltered.filter(user => user.club);
+      if (assignmentFilter === 'society') return roleFiltered.filter(user => user.professional_society);
+      if (assignmentFilter === 'direct') return roleFiltered.filter(user => !user.department && !user.club && !user.professional_society);
     }
     
     return roleFiltered;
-  }, [users, activeRole, coordinatorFilter]);
+  }, [users, activeRole, assignmentFilter]);
 
   const getAssignmentValue = (user: UserWithEmail) => {
-    if (user.role === 'coordinator') {
-      if (coordinatorFilter === 'department') return user.department || 'N/A';
-      if (coordinatorFilter === 'club') return user.club || 'N/A';
-      if (coordinatorFilter === 'society') return user.professional_society || 'N/A';
-      if (coordinatorFilter === 'direct') return 'Direct Submission (Skipping HOD)';
+    if (user.role === 'coordinator' || user.role === 'hod') {
+      const assignments = [];
+      if (user.department) assignments.push(user.department);
+      if (user.club) assignments.push(user.club);
+      if (user.professional_society) assignments.push(user.professional_society);
+      
+      return assignments.length > 0 ? assignments.join(', ') : 'Direct (No HOD)';
     }
-    if (user.role === 'hod') return user.department || 'N/A';
     return 'N/A';
   };
 
   const getAssignmentHeader = () => {
-    if (activeRole === 'coordinator') {
-      if (coordinatorFilter === 'department') return 'Department';
-      if (coordinatorFilter === 'club') return 'Club';
-      if (coordinatorFilter === 'society') return 'Professional Society';
-      if (coordinatorFilter === 'direct') return 'Workflow Type';
-    }
-    if (activeRole === 'hod') return 'Department';
-    return 'Assignment';
+    return 'Assignments';
   };
 
   return (
@@ -129,14 +143,14 @@ const ManageUsers = () => {
 
         {ALL_ROLES.map(role => (
           <TabsContent key={role} value={role} className="mt-4">
-            {role === 'coordinator' && (
+            {(role === 'coordinator' || role === 'hod') && (
               <div className="flex items-center gap-4 mb-4 bg-card p-4 rounded-lg shadow">
-                <Label className="font-semibold">Coordinator Type:</Label>
-                <RadioGroup value={coordinatorFilter} onValueChange={(value: CoordinatorFilter) => setCoordinatorFilter(value)} className="flex space-x-4">
+                <Label className="font-semibold">Assignment Type:</Label>
+                <RadioGroup value={assignmentFilter} onValueChange={(value: AssignmentFilter) => setAssignmentFilter(value)} className="flex space-x-4">
                   <div className="flex items-center space-x-2"><RadioGroupItem value="department" id="r1" /><Label htmlFor="r1">Department</Label></div>
                   <div className="flex items-center space-x-2"><RadioGroupItem value="club" id="r2" /><Label htmlFor="r2">Club</Label></div>
                   <div className="flex items-center space-x-2"><RadioGroupItem value="society" id="r3" /><Label htmlFor="r3">Professional Society</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="direct" id="r4" /><Label htmlFor="r4" className="text-primary font-bold">Direct (No HOD)</Label></div>
+                  {role === 'coordinator' && <div className="flex items-center space-x-2"><RadioGroupItem value="direct" id="r4" /><Label htmlFor="r4" className="text-primary font-bold">Direct (No HOD)</Label></div>}
                 </RadioGroup>
               </div>
             )}
@@ -167,7 +181,22 @@ const ManageUsers = () => {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getAssignmentValue(user)}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}><Edit className="h-4 w-4" /></Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleResetPassword(user)} className="text-destructive focus:text-destructive">
+                                <Lock className="mr-2 h-4 w-4" /> Reset Password
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
