@@ -183,6 +183,16 @@ const createEvent = async (req, res, next) => {
       'funding_source', 'promotion_strategy'
     ];
 
+    // 5. Determine initial status
+    const [userProfiles] = await db.query(
+      'SELECT department, club, professional_society FROM profiles WHERE id = ?',
+      [userId]
+    );
+
+    const profile = userProfiles[0] || {};
+    const hasAssignment = profile.department || profile.club || profile.professional_society;
+    const initialStatus = hasAssignment ? 'pending_hod' : 'pending_dean';
+
     const values = [];
     fields.forEach(field => {
       if (field === 'id') {
@@ -192,7 +202,7 @@ const createEvent = async (req, res, next) => {
       } else if (field === 'submitted_by') {
         values.push(userId);
       } else if (field === 'status') {
-        values.push('pending_hod');
+        values.push(initialStatus);
       } else if (jsonFields.includes(field)) {
         values.push(JSON.stringify(eventData[field] || []));
       } else {
@@ -207,21 +217,34 @@ const createEvent = async (req, res, next) => {
       values
     );
 
-    // Notify HOD of new event
-    const [hods] = await db.query(
-      "SELECT id FROM profiles WHERE role = 'hod' AND department = (SELECT department FROM profiles WHERE id = ?)",
-      [userId]
-    );
-
-    for (const hod of hods) {
-      await createNotification(
-        hod.id,
-        eventId,
-        `New event submission: "${eventData.title}" requires your approval.`
+    // 6. Notify appropriate roles
+    if (initialStatus === 'pending_hod') {
+      // Notify HOD of new event in their department
+      const [hods] = await db.query(
+        "SELECT id FROM profiles WHERE role = 'hod' AND department = ?",
+        [profile.department]
       );
+
+      for (const hod of hods) {
+        await createNotification(
+          hod.id,
+          eventId,
+          `New event submission: "${eventData.title}" requires your approval.`
+        );
+      }
+    } else {
+      // Notify Deans of new event (Skipped HOD)
+      const [deans] = await db.query("SELECT id FROM profiles WHERE role = 'dean'");
+      for (const dean of deans) {
+        await createNotification(
+          dean.id,
+          eventId,
+          `New direct submission (No HOD): "${eventData.title}" requires your review.`
+        );
+      }
     }
 
-    res.status(201).json({ id: eventId, uniqueCode, message: 'Event created successfully' });
+    res.status(201).json({ id: eventId, uniqueCode, message: 'Event created successfully', status: initialStatus });
   } catch (error) {
     next(error);
   }
@@ -342,11 +365,15 @@ const updateEventStatus = async (req, res, next) => {
     // Check if user is owner
     const isOwner = events[0].submitted_by === userId;
 
+    // Get current event data to check if HOD was skipped
+    const [eventDetails] = await db.query('SELECT hod_approval_at FROM events WHERE id = ?', [id]);
+    const hodSkipped = eventDetails[0]?.hod_approval_at === null;
+
     // Role-based status transitions
     const allowedStatuses = {
       coordinator: isOwner ? ['cancelled'] : [],
       hod: ['pending_dean', 'returned_to_coordinator'],
-      dean: ['pending_principal', 'returned_to_hod'],
+      dean: ['pending_principal', hodSkipped ? 'returned_to_coordinator' : 'returned_to_hod'],
       principal: ['approved', 'rejected', 'returned_to_dean'],
       admin: ['approved', 'rejected', 'cancelled', 'pending_hod', 'pending_dean', 'pending_principal']
     };

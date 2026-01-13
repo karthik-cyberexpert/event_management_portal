@@ -280,7 +280,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
                 onClick={() => handleAction('return')}
                 disabled={isSubmitting}
               >
-                {actions.return.label}
+                {role === 'dean' && !event.hod_approval_at ? 'Return to Coordinator' : actions.return.label}
               </Button>
             </div>
             <Button

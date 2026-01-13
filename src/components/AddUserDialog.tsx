@@ -38,20 +38,6 @@ const formSchema = z.object({
   department: z.string().optional(),
   club: z.string().optional(),
   professional_society: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.role === 'coordinator') {
-    const isDepartmentSelected = data.department && data.department !== '--none--';
-    const isClubSelected = data.club && data.club !== '--none--';
-    const isSocietySelected = data.professional_society && data.professional_society !== '--none--';
-
-    if (!isDepartmentSelected && !isClubSelected && !isSocietySelected) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Coordinator must be assigned to a Department, Club, or Society.',
-        path: ['department'], // Attach error to department field for visibility
-      });
-    }
-  }
 });
 
 type Department = { id: string; name: string; degree: string; };

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api } from '@/lib/api';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: string;
@@ -14,7 +14,7 @@ interface Session {
   user: User;
 }
 
-interface Profile {
+export interface Profile {
   id: string;
   first_name: string;
   last_name: string;

@@ -25,7 +25,7 @@ type UserWithEmail = Profile & {
 
 const ALL_ROLES = ['coordinator', 'hod', 'dean', 'principal', 'admin'] as const;
 type Role = typeof ALL_ROLES[number];
-type CoordinatorFilter = 'department' | 'club' | 'society';
+type CoordinatorFilter = 'department' | 'club' | 'society' | 'direct';
 
 const roleDisplayMap: Record<Role, string> = {
   coordinator: 'Coordinators',
@@ -76,6 +76,7 @@ const ManageUsers = () => {
       if (coordinatorFilter === 'department') return roleFiltered.filter(user => user.department);
       if (coordinatorFilter === 'club') return roleFiltered.filter(user => user.club);
       if (coordinatorFilter === 'society') return roleFiltered.filter(user => user.professional_society);
+      if (coordinatorFilter === 'direct') return roleFiltered.filter(user => !user.department && !user.club && !user.professional_society);
     }
     
     return roleFiltered;
@@ -86,6 +87,7 @@ const ManageUsers = () => {
       if (coordinatorFilter === 'department') return user.department || 'N/A';
       if (coordinatorFilter === 'club') return user.club || 'N/A';
       if (coordinatorFilter === 'society') return user.professional_society || 'N/A';
+      if (coordinatorFilter === 'direct') return 'Direct Submission (Skipping HOD)';
     }
     if (user.role === 'hod') return user.department || 'N/A';
     return 'N/A';
@@ -96,6 +98,7 @@ const ManageUsers = () => {
       if (coordinatorFilter === 'department') return 'Department';
       if (coordinatorFilter === 'club') return 'Club';
       if (coordinatorFilter === 'society') return 'Professional Society';
+      if (coordinatorFilter === 'direct') return 'Workflow Type';
     }
     if (activeRole === 'hod') return 'Department';
     return 'Assignment';
@@ -133,6 +136,7 @@ const ManageUsers = () => {
                   <div className="flex items-center space-x-2"><RadioGroupItem value="department" id="r1" /><Label htmlFor="r1">Department</Label></div>
                   <div className="flex items-center space-x-2"><RadioGroupItem value="club" id="r2" /><Label htmlFor="r2">Club</Label></div>
                   <div className="flex items-center space-x-2"><RadioGroupItem value="society" id="r3" /><Label htmlFor="r3">Professional Society</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="direct" id="r4" /><Label htmlFor="r4" className="text-primary font-bold">Direct (No HOD)</Label></div>
                 </RadioGroup>
               </div>
             )}
