@@ -59,6 +59,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setProfile(profileData);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // If profile fetch fails, clear session to prevent redirect loops
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setSession(null);
+      setProfile(null);
     }
   };
 
