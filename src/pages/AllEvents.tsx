@@ -81,11 +81,21 @@ const AllEvents = () => {
     setLoading(true);
     try {
       const data = await api.events.list();
-      const mappedData = data.map(event => ({
+      let mappedData = data.map(event => ({
         ...event,
         coordinator: event.profiles || event.submitted_by,
         profiles: event.profiles || event.submitted_by,
       }));
+
+      // Filter for HODs to only show relevant events
+      if (profile?.role === 'hod') {
+        mappedData = mappedData.filter(event => 
+          (profile.department && (event.department === profile.department || event.department_club === profile.department)) ||
+          (profile.club && event.department_club === profile.club) ||
+          (profile.professional_society && event.department_club === profile.professional_society)
+        );
+      }
+
       setEvents(mappedData);
       setApprovedEvents(mappedData.filter(e => e.status === 'approved'));
     } catch (error: any) {
@@ -96,8 +106,10 @@ const AllEvents = () => {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    if (profile) {
+      fetchEvents();
+    }
+  }, [profile]);
 
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
