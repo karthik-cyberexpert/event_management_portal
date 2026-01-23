@@ -38,3 +38,7 @@ addBudgetRemarksColumn();
 
 
 node backend/add-budget-remarks.js
+
+/* SQL Equivalent:
+ALTER TABLE events ADD COLUMN budget_remarks TEXT DEFAULT NULL;
+*/
