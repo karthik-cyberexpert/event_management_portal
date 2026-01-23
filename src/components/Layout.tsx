@@ -113,6 +113,18 @@ const Layout = ({ children }: { children: ReactNode }) => {
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   Profile
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  navigate('/profile');
+                  // If we are already on the profile page, we need to manually trigger the scroll
+                  setTimeout(() => {
+                    const element = document.getElementById('security-password');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }}>
+                  Change Password
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut}>
                   Sign Out
                 </DropdownMenuItem>

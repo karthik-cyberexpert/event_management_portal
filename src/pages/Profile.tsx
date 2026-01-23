@@ -71,6 +71,17 @@ const ProfilePage = () => {
     }
   }, [profile, form]);
 
+  useEffect(() => {
+    if (window.location.hash === '#security-password') {
+      setTimeout(() => {
+        const element = document.getElementById('security-password');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500); // Small delay to ensure render
+    }
+  }, []);
+
   const onSubmit = async (values: z.infer<typeof profileSchema>) => {
     if (!profile) return;
 
@@ -213,7 +224,7 @@ const ProfilePage = () => {
         </Form>
       </Card>
 
-      <Card className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden group mt-8">
+      <Card id="security-password" className="bg-white/70 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden group mt-8">
         <CardHeader className="bg-gradient-to-r from-rose-50/50 to-transparent border-b pb-8">
           <div className="flex items-center gap-6">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-100 group-hover:rotate-3 transition-transform">
