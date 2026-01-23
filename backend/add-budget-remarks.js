@@ -31,10 +31,3 @@ const addBudgetRemarksColumn = async () => {
 };
 
 addBudgetRemarksColumn();
-
-
-
-
-
-
-node backend/add-budget-remarks.js

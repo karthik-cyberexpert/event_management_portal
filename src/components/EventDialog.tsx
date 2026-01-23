@@ -832,6 +832,16 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 <div className="space-y-4 md:col-span-2">
                   <h3 className="text-lg font-semibold border-b pb-2">Budget & Funding</h3>
                   <FormField control={form.control} name="budget_estimate" render={({ field }) => (<FormItem><FormLabel>Budget Estimate (in Rupees)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                  {/* Dean/Principal Only: Budget Remarks */}
+                  {['dean', 'principal'].includes(profile?.role || '') && event?.budget_remarks && (
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4">
+                      <FormLabel className="text-amber-800 flex items-center gap-2 font-bold text-xs uppercase tracking-wider mb-1">
+                         <MessageSquare className="h-3 w-3" /> Dean's Budget Remarks (Private)
+                      </FormLabel>
+                      <p className="text-sm text-amber-900">{event.budget_remarks}</p>
+                    </div>
+                  )}
+
                   <div className={cn(!requiresFundingSource && 'opacity-50 pointer-events-none', 'transition-opacity')}><FormField control={form.control} name="funding_source" render={() => (<FormItem><FormLabel>Funding Source (Required if budget &gt; 0)</FormLabel><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{FUNDING_SOURCES.map((item) => (<FormField key={item} control={form.control} name="funding_source" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly || !requiresFundingSource} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('funding_source')?.includes('others') && (<FormField control={form.control} name="funding_source_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Funding Source</FormLabel><FormControl><Textarea {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} /></div>
                 </div>
 

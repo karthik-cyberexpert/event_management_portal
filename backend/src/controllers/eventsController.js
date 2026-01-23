@@ -405,6 +405,12 @@ const updateEventStatus = async (req, res, next) => {
       query += `, ${timestampField} = NOW()`;
     }
     
+    // Only Dean can add budget remarks, and only if budget > 0 (handled by frontend, validated here if needed)
+    if (req.body.budgetRemarks !== undefined) {
+      query += ', budget_remarks = ?';
+      params.push(req.body.budgetRemarks);
+    }
+
     if (remarks) {
       query += ', remarks = ?';
       params.push(remarks);

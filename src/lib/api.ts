@@ -101,10 +101,10 @@ export const api = {
         method: 'DELETE',
       }),
 
-    updateStatus: (id: string, status: string, remarks?: string) =>
+    updateStatus: (id: string, status: string, remarks?: string, budgetRemarks?: string) =>
       fetchAPI(`/events/${id}/status`, {
         method: 'PUT',
-        body: JSON.stringify({ status, remarks }),
+        body: JSON.stringify({ status, remarks, budgetRemarks }),
       }),
 
     checkAvailability: (data: { 

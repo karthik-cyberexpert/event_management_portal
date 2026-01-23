@@ -31,6 +31,7 @@ import { Terminal } from 'lucide-react';
 
 const formSchema = z.object({
   remarks: z.string().optional(),
+  budgetRemarks: z.string().optional(),
 });
 
 type EventActionDialogProps = {
@@ -85,12 +86,13 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { remarks: '' }, // Clear default remarks to ensure new input
+    defaultValues: { remarks: '', budgetRemarks: event.budget_remarks || '' },
   });
 
   const handleAction = async (actionType: 'approve' | 'reject' | 'return') => {
     const action = actions[actionType as keyof typeof actions];
     const remarks = form.getValues('remarks');
+    const budgetRemarks = form.getValues('budgetRemarks');
     
     if ((actionType === 'reject' || actionType === 'return') && !remarks?.trim()) {
       form.setError('remarks', { type: 'manual', message: 'Remarks are required to reject or return an event.' });
@@ -100,7 +102,15 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     setIsSubmitting(true);
     
     try {
-      await api.events.updateStatus(event.id, action.status, remarks || undefined);
+      // Pass budgetRemarks if present. Note: api.events.updateStatus needs to support this.
+      // Modifying the query to send it as part of the body if the API supports it in a custom way, 
+      // OR assuming updateStatus is updated to handle extra fields.
+      // Since I can't easily change the function signature in api.ts without breaking other calls or using 'any',
+      // I will use a direct fetch or assume the backend handles it via a modified api call.
+      // Let's modify api.ts to accept an options object or extended params.
+      // For now, I'll pass it as a 3rd argument object if I can, OR I'll assume updateStatus takes (id, status, remarks, budgetRemarks).
+      // I'll update api.ts next.
+      await api.events.updateStatus(event.id, action.status, remarks || undefined, budgetRemarks || undefined);
       toast.success('Event status updated successfully.');
       onActionSuccess();
     } catch (error: any) {
@@ -235,6 +245,17 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
             </div>
           </div>
           
+
+          {/* NEW: Display Dean's Budget Remarks for Principal */}
+          {role === 'principal' && event.budget_remarks && (
+            <div className="borderl-4 border-amber-500 bg-amber-50 p-4 mb-4 rounded-r-md">
+              <h4 className="font-semibold text-amber-800 mb-2 flex items-center text-sm uppercase tracking-wider">
+                <MessageSquare className="h-4 w-4 mr-2" /> Dean's Budget Remarks (Private)
+              </h4>
+              <p className="text-sm text-gray-800 whitespace-pre-wrap">{event.budget_remarks}</p>
+            </div>
+          )}
+
           {/* NEW: Display previous remarks as view-only */}
           {event.remarks && (
             <div className="border-t pt-4 mt-4">
@@ -245,9 +266,36 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
             </div>
           )}
 
+
           <Form {...form}>
             <form className="space-y-4">
+               {/* Dean only budget remarks */}
+               {role === 'dean' && event.budget_estimate > 0 && (
+                <FormField
+                  control={form.control}
+                  name="budgetRemarks"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-amber-700 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" /> 
+                        Confidential Budget Remarks (Dean/Principal Only)
+                      </FormLabel>
+                      <FormControl>
+                         <Textarea 
+                           placeholder="Enter remarks regarding the budget (optional)..." 
+                           {...field} 
+                           className="bg-amber-50/50 border-amber-200 focus:border-amber-400 focus:ring-amber-200"
+                         />
+                      </FormControl>
+                      <p className="text-[10px] text-zinc-500">These remarks are only visible to you and the Principal.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
+// ...
                 control={form.control}
                 name="remarks"
                 render={({ field }) => (
