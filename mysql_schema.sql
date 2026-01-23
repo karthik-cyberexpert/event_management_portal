@@ -141,6 +141,7 @@ CREATE TABLE `events` (
   `activity_lead_by` TEXT DEFAULT NULL,
   `activity_duration_hours` INT DEFAULT NULL,
   `coordinator_resubmission_reason` TEXT DEFAULT NULL,
+  `budget_remarks` TEXT DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `events_unique_code_unique` (`unique_code`(255)),
   CONSTRAINT `events_venue_id_fkey` FOREIGN KEY (`venue_id`) REFERENCES `venues` (`id`) ON DELETE SET NULL,
