@@ -379,7 +379,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
           {/* Titles */}
           <div className="text-center my-4">
-            <h2 className="text-xl font-bold">Institution's Innovation Council</h2>
+            <h2 className="text-xl font-bold">Institution's Innovation Council 8.O</h2>
             <h3 className="text-lg">Activity Report Copy</h3>
           </div>
 
