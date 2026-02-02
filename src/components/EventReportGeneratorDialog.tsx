@@ -131,6 +131,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const reportContentRef = useRef<HTMLDivElement>(null);
+  const attachmentsRef = useRef<HTMLDivElement>(null);
   
   const durationHours = useMemo(() => calculateDurationHours(event), [event]);
 
@@ -301,20 +303,12 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   };
 
   const handleDownloadPDF = async () => {
-    if (!reportRef.current || !reportData?.password) return;
+    if (!reportContentRef.current || !attachmentsRef.current || !reportData?.password) return;
     
     setIsGenerating(true);
     const toastId = toast.loading("Generating secure PDF...");
     
     try {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
@@ -326,27 +320,44 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         }
       });
       
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Calculate content height in PDF units
-      const contentHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      let heightLeft = contentHeight;
-      let position = 0;
+      const addElementToPdf = async (element: HTMLElement, firstPage: boolean = false) => {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const contentHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        let heightLeft = contentHeight;
+        let position = 0;
 
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
-      heightLeft -= pdfHeight;
+        if (!firstPage) {
+          pdf.addPage();
+        }
 
-      // Add subsequent pages if content exceeds one page
-      while (heightLeft > 0) {
-        position = heightLeft - contentHeight;
-        pdf.addPage();
+        // Add first image chunk
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
         heightLeft -= pdfHeight;
-      }
+
+        // Add subsequent pages if content exceeds one page
+        while (heightLeft > 0) {
+          position = heightLeft - contentHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
+          heightLeft -= pdfHeight;
+        }
+      };
+
+      // 1. Add Main Content
+      await addElementToPdf(reportContentRef.current, true);
+      
+      // 2. Add Attachments Section (Always starts on new page)
+      await addElementToPdf(attachmentsRef.current);
       
       pdf.save(`Activity_Report_${event.title.replace(/\s+/g, '_')}.pdf`);
       toast.success("Secure PDF downloaded successfully!", { id: toastId });
@@ -364,106 +375,110 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
     return (
       <div className="printable-report bg-white text-black p-8 font-serif flex flex-col min-h-[29.7cm]" ref={reportRef}>
-        <div className="flex-grow">
-          {/* Header */}
-          <header className="flex justify-between items-center border-b-2 border-black pb-2">
-            <img src="/ace.jpeg" alt="ACE Logo" className="h-28 w-28 object-contain" />
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">ADHIYAMAAN COLLEGE OF ENGINEERING</h1>
-              <p className="text-sm font-semibold">(An Autonomous Institution)</p>
-              <p className="text-xs">Affiliated to Anna University, Chennai</p>
-              <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
-            </div>
-            <img src="/iic.jpg" alt="IIC Logo" className="h-28 w-28 object-contain" />
-          </header>
+        <div ref={reportContentRef} className="bg-white">
+          <div className="flex-grow">
+            {/* Header */}
+            <header className="flex justify-between items-center border-b-2 border-black pb-2">
+              <img src="/ace.jpeg" alt="ACE Logo" className="h-28 w-28 object-contain" />
+              <div className="text-center">
+                <h1 className="text-2xl font-bold">ADHIYAMAAN COLLEGE OF ENGINEERING</h1>
+                <p className="text-sm font-semibold">(An Autonomous Institution)</p>
+                <p className="text-xs">Affiliated to Anna University, Chennai</p>
+                <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
+              </div>
+              <img src="/iic.jpg" alt="IIC Logo" className="h-28 w-28 object-contain" />
+            </header>
 
-          {/* Titles */}
-          <div className="text-center my-4">
-            <h2 className="text-xl font-bold">Institution's Innovation Council 8.O</h2>
-            <h3 className="text-lg">Activity Report Copy</h3>
+            {/* Titles */}
+            <div className="text-center my-4">
+              <h2 className="text-xl font-bold">Institution's Innovation Council</h2>
+              <h3 className="text-lg">Activity Report Copy</h3>
+            </div>
+
+            {/* Section 1: Event Details */}
+            <section className="p-2">
+              <div className="text-sm space-y-1">
+                {/* Row 1 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
+                </div>
+                {/* Row 2 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
+                </div>
+                {/* Row 3 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
+                </div>
+                {/* Row 4 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
+                </div>
+                {/* Row 5 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
+                </div>
+                {/* Row 6 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
+                </div>
+                {/* Row 7 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
+                </div>
+                {/* Row 8 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
+                </div>
+                {/* Row 9 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
+                </div>
+                {/* Row 10 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
+                </div>
+                {/* Row 11 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
+                </div>
+                {/* Row 12 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
+                </div>
+                {/* Row 13 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
+                </div>
+                {/* Row 14 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
+                </div>
+                {/* Row 15 */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
+                </div>
+                {/* Row 16 (Last row, no border-b) */}
+                <div className="grid grid-cols-4 pt-1">
+                  <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 2: Overview */}
+            <section className="p-2 mt-4">
+              <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
+              <div className="grid grid-cols-2 gap-x-4 text-sm space-y-2">
+                <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
+                <div><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
+              </div>
+            </section>
           </div>
+        </div>
 
-          {/* Section 1: Event Details */}
-          <section className="p-2">
-            <div className="text-sm space-y-1">
-              {/* Row 1 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
-              </div>
-              {/* Row 2 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
-              </div>
-              {/* Row 3 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
-              </div>
-              {/* Row 4 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
-              </div>
-              {/* Row 5 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
-              </div>
-              {/* Row 6 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
-              </div>
-              {/* Row 7 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
-              </div>
-              {/* Row 8 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
-              </div>
-              {/* Row 9 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
-              </div>
-              {/* Row 10 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
-              </div>
-              {/* Row 11 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
-              </div>
-              {/* Row 12 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
-              </div>
-              {/* Row 13 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
-              </div>
-              {/* Row 14 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
-              </div>
-              {/* Row 15 */}
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
-                <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
-              </div>
-              {/* Row 16 (Last row, no border-b) */}
-              <div className="grid grid-cols-4 pt-1">
-                <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 2: Overview */}
-          <section className="p-2 mt-4">
-            <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
-            <div className="grid grid-cols-2 gap-x-4 text-sm space-y-2">
-              <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
-              <div><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
-            </div>
-          </section>
-
+        <div ref={attachmentsRef} className="bg-white">
           {/* Section 3: Attachments */}
-          <section className="p-2 mt-4 page-break-before">
+          <section className="p-2 mt-4">
             <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
             <div className="grid grid-cols-2 gap-4">
               {photoUrls.map((url, index) => (
@@ -488,27 +503,27 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
               </tbody>
             </table>
           </section>
-        </div>
 
-        {/* Section 5: Signature Labels */}
-        <section className="mt-auto pt-12 pb-4 grid grid-cols-4 gap-4 text-center">
-          <div className="flex flex-col items-center">
-            <div className="w-32 border-t border-black mb-1"></div>
-            <span className="text-xs font-bold uppercase">Coordinator</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-32 border-t border-black mb-1"></div>
-            <span className="text-xs font-bold uppercase">HOD</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-32 border-t border-black mb-1"></div>
-            <span className="text-xs font-bold uppercase">DEAN</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-32 border-t border-black mb-1"></div>
-            <span className="text-xs font-bold uppercase">PRINCIPAL</span>
-          </div>
-        </section>
+          {/* Section 5: Signature Labels */}
+          <section className="mt-12 pb-4 grid grid-cols-4 gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <div className="w-32 border-t border-black mb-1"></div>
+              <span className="text-xs font-bold uppercase">Coordinator</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-32 border-t border-black mb-1"></div>
+              <span className="text-xs font-bold uppercase">HOD</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-32 border-t border-black mb-1"></div>
+              <span className="text-xs font-bold uppercase">DEAN</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-32 border-t border-black mb-1"></div>
+              <span className="text-xs font-bold uppercase">PRINCIPAL</span>
+            </div>
+          </section>
+        </div>
       </div>
     );
   };
