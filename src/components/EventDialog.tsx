@@ -45,9 +45,10 @@ import PosterDialog from './PosterDialog'; // New Import
 // --- Helper Functions ---
 
 // Helper function to count words
-const countWords = (text: string | null | undefined) => {
+// Helper function to count characters (replaces countWords)
+const countCharacters = (text: string | null | undefined) => {
   if (!text) return 0;
-  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  return text.length;
 };
 
 // Helper function to calculate the current academic year (Sep 1 - Aug 31)
@@ -164,12 +165,13 @@ const formSchema = z.object({
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
-  objective: z.string().min(1, 'Objective is required'),
+  display_objective: z.string().max(100, 'Objective must be 100 characters or less').optional(), // Virtual field for validation message if needed, or handled in refinement
+  objective: z.string().min(1, 'Objective is required').max(100, 'Objective must be 100 characters or less'),
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
-  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(150, 'Proposed Outcomes must be 150 characters or less'),
   
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
@@ -222,25 +224,9 @@ const formSchema = z.object({
     });
   }
   
-  // Word count validation for Objective (Max 99 words)
-  const objectiveWordCount = countWords(data.objective);
-  if (objectiveWordCount > 99) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Objective must be 99 words or less. Current count: ${objectiveWordCount}`,
-      path: ['objective'],
-    });
-  }
-
-  // Word count validation for Proposed Outcomes (Max 149 words)
-  const outcomeWordCount = countWords(data.proposed_outcomes);
-  if (outcomeWordCount > 149) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Proposed Outcomes must be 149 words or less. Current count: ${outcomeWordCount}`,
-      path: ['proposed_outcomes'],
-    });
-  }
+  
+  // Word count validation removed as we are using character limits in z.string().max() directly above.
+  // Leaving this block empty as we removed the custom word count issues.
   
   // Resubmission reason required if status is returned_to_coordinator
   if (data.status === 'returned_to_coordinator' && !data.coordinator_resubmission_reason?.trim()) {
@@ -335,8 +321,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const academicYearOptions = getAcademicYearOptions();
   const objectiveValue = form.watch('objective');
   const outcomeValue = form.watch('proposed_outcomes');
-  const objectiveWordCount = countWords(objectiveValue);
-  const outcomeWordCount = countWords(outcomeValue);
+
+  const objectiveCharCount = countCharacters(objectiveValue);
+  const outcomeCharCount = countCharacters(outcomeValue);
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
@@ -767,8 +754,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Objective of the Event</FormLabel>
-                        <span className={cn("text-xs", objectiveWordCount > 99 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {objectiveWordCount} / 99 words
+                        <span className={cn("text-xs", objectiveCharCount > 100 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {objectiveCharCount} / 100 characters
                         </span>
                       </div>
                       <FormControl>
@@ -802,8 +789,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Proposed Outcomes</FormLabel>
-                        <span className={cn("text-xs", outcomeWordCount > 149 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {outcomeWordCount} / 149 words
+                        <span className={cn("text-xs", outcomeCharCount > 150 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {outcomeCharCount} / 150 characters
                         </span>
                       </div>
                       <FormControl>

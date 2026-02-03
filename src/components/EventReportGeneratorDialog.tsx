@@ -39,7 +39,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const MAX_PHOTOS = 4;
+const MAX_PHOTOS = 10;
+const MIN_PHOTOS = 6;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 
 const ACTIVITY_LEAD_BY_OPTIONS = [
@@ -61,7 +62,7 @@ const formSchema = z.object({
   external_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
   activity_lead_by: z.string().min(1, 'Activity lead is required'),
   final_report_remarks: z.string().optional(),
-  photos: z.array(z.instanceof(File)).min(1, 'At least one photo is required').max(MAX_PHOTOS),
+  photos: z.array(z.instanceof(File)).min(MIN_PHOTOS, `At least ${MIN_PHOTOS} photos are required`).max(MAX_PHOTOS, `Maximum ${MAX_PHOTOS} photos allowed`),
   social_media_selection: z.array(z.string()).optional(),
   twitter_url: z.string().url('Invalid URL').optional().or(z.literal('')),
   facebook_url: z.string().url('Invalid URL').optional().or(z.literal('')),
@@ -211,6 +212,10 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const currentFiles = form.getValues('photos') || [];
     const newFiles = [...currentFiles, ...acceptedFiles].slice(0, MAX_PHOTOS);
+    // Warning if trying to add more than max
+    if ([...currentFiles, ...acceptedFiles].length > MAX_PHOTOS) {
+       toast.warning(`You can only upload up to ${MAX_PHOTOS} photos.`);
+    }
     form.setValue('photos', newFiles, { shouldValidate: true });
   }, [form]);
 
@@ -587,8 +592,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
               {/* Photo Uploads */}
               <div>
-                <FormLabel>Event Photos (up to {MAX_PHOTOS}, JPEG/PNG, Max 2MB each)</FormLabel>
-                <div {...getRootProps()} className={cn('p-8 mt-2 border-2 border-dashed rounded-md text-center cursor-pointer', isDragActive && 'border-primary bg-primary/10')}><input {...getInputProps()} /><UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" /><p>Drag & drop photos here, or click to select</p></div>
+                <FormLabel>Event Photos (Min {MIN_PHOTOS}, Max {MAX_PHOTOS}, JPEG/PNG, Max 2MB each)</FormLabel>
+                <div {...getRootProps()} className={cn('p-8 mt-2 border-2 border-dashed rounded-md text-center cursor-pointer', isDragActive && 'border-primary bg-primary/10')}><input {...getInputProps()} /><UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" /><p>Drag & drop photos here, or click to select (Upload {MIN_PHOTOS} to {MAX_PHOTOS} photos)</p></div>
                 <div className="grid grid-cols-4 gap-2 mt-2">
                   {form.watch('photos').map((file, index) => (<div key={index} className="relative"><img src={URL.createObjectURL(file)} alt="preview" className="w-full h-24 object-cover rounded" /><Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => removePhoto(index)}>X</Button></div>))}
                 </div>
