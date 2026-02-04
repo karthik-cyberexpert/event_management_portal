@@ -759,7 +759,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         </span>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} />
+                        <Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} maxLength={100} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -794,7 +794,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         </span>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} />
+                        <Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} maxLength={150} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
