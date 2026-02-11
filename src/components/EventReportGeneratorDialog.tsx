@@ -646,7 +646,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
               {!isReadOnly ? (
                 <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isGenerating}>Back to Edit</Button>
               ) : (
-                reportData && (reportData.regenerationCount || 0) < 1 && (
+                reportData && (
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -658,7 +658,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                     className="mr-auto text-amber-600 border-amber-200 hover:bg-amber-50"
                   >
                     <AlertCircle className="mr-2 h-4 w-4" />
-                    Regenerate Report (One-time)
+                    Regenerate Report
                   </Button>
                 )
               )}

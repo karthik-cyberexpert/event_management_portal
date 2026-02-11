@@ -19,7 +19,9 @@ import {
   Download,
   CalendarDays,
   Lock,
-  Eye
+  Eye,
+  FileText,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
@@ -41,6 +43,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar as MiniCalendar } from '@/components/ui/calendar';
 
 const statusColors = {
+  draft: 'bg-blue-100 text-blue-700 border-blue-200',
   pending_hod: 'bg-amber-100 text-amber-700 border-amber-200',
   returned_to_coordinator: 'bg-rose-100 text-rose-700 border-rose-200',
   pending_dean: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -114,6 +117,7 @@ const CoordinatorDashboard = () => {
   };
 
   const myEvents = allEvents.filter(e => e.submitted_by === user.id);
+  const draftEvents = myEvents.filter(e => e.status === 'draft');
   const pendingEvents = myEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
   const returnedEvents = myEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
   const approvedEvents = myEvents.filter(e => e.status === 'approved');
@@ -197,6 +201,11 @@ const CoordinatorDashboard = () => {
                               <AlertCircle className="mr-2 h-4 w-4" /> View Remarks History
                             </DropdownMenuItem>
                           )}
+                        {event.status === 'draft' && (
+                          <DropdownMenuItem onClick={() => handleDeleteDraft(event.id)} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Draft
+                          </DropdownMenuItem>
+                        )}
                         {event.status === 'approved' && (
                           <DropdownMenuItem onClick={() => handleDownloadReport(event)} className="cursor-pointer text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50">
                             {event.has_report ? (
@@ -223,6 +232,16 @@ const CoordinatorDashboard = () => {
     </Card>
   );
 
+  const handleDeleteDraft = async (eventId: string) => {
+    try {
+      await api.events.update(eventId, { status: 'cancelled' });
+      toast.success('Draft deleted.');
+      fetchEvents();
+    } catch {
+      toast.error('Failed to delete draft.');
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-full overflow-hidden animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -241,8 +260,18 @@ const CoordinatorDashboard = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="bg-slate-200/50 p-1.5 rounded-2xl w-full sm:w-auto h-auto grid grid-cols-3 sm:flex">
+          <Tabs defaultValue="drafts" className="w-full">
+            <TabsList className="bg-slate-200/50 p-1.5 rounded-2xl w-full sm:w-auto h-auto grid grid-cols-4 sm:flex">
+              <TabsTrigger 
+                value="drafts" 
+                className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-bold transition-all"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Drafts</span>
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 text-[10px] ml-1 px-1.5 min-w-[1.2rem] group-data-[state=active]:bg-blue-100 group-data-[state=active]:text-blue-600 transition-colors">{draftEvents.length}</Badge>
+                </div>
+              </TabsTrigger>
               <TabsTrigger 
                 value="pending" 
                 className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm font-bold transition-all"
@@ -276,6 +305,10 @@ const CoordinatorDashboard = () => {
             </TabsList>
 
             <div className="mt-8">
+              <TabsContent value="drafts" className="h-[550px] animate-in fade-in slide-in-from-left-4 duration-500">
+                {renderEventTable(draftEvents, "Saved Drafts")}
+              </TabsContent>
+
               <TabsContent value="pending" className="h-[550px] animate-in fade-in slide-in-from-left-4 duration-500">
                 {renderEventTable(pendingEvents, "Awaiting Approval")}
               </TabsContent>

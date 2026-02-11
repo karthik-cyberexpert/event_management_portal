@@ -27,10 +27,9 @@ const getEvents = async (req, res, next) => {
     
     // Role-based visibility logic
     if (userRole === 'admin' || userRole === 'principal' || userRole === 'dean' || userRole === 'hod') {
-      // Sees everything or is filtered by category in the query below if needed.
-      // For HODs, we'll let them see more and then filter in the frontend or 
-      // we could add a complex OR clause here. 
-      // Making HOD see more like Dean/Admin for now to simplify frontend filtering.
+      // Sees everything except other users' drafts
+      query += ` AND (e.status != 'draft' OR e.submitted_by = ?)`;
+      params.push(userId);
     } else {
       // Coordinators and others
       if (userDepartment) {
@@ -195,7 +194,8 @@ const createEvent = async (req, res, next) => {
 
     const profile = userProfiles[0] || {};
     const hasAssignment = profile.department || profile.club || profile.professional_society;
-    const initialStatus = hasAssignment ? 'pending_hod' : 'pending_dean';
+    const isDraft = eventData.status === 'draft';
+    const initialStatus = isDraft ? 'draft' : (hasAssignment ? 'pending_hod' : 'pending_dean');
 
     const values = [];
     fields.forEach(field => {
@@ -221,31 +221,33 @@ const createEvent = async (req, res, next) => {
       values
     );
 
-    // 6. Notify appropriate roles
-    if (initialStatus === 'pending_hod') {
-      // Notify HOD of new event in their assigned category
-      const eventCategory = eventData.department_club;
-      const [hods] = await db.query(
-        "SELECT id FROM profiles WHERE role = 'hod' AND (department = ? OR club = ? OR professional_society = ?)",
-        [eventCategory, eventCategory, eventCategory]
-      );
+    // 6. Notify appropriate roles (skip for drafts)
+    if (!isDraft) {
+      if (initialStatus === 'pending_hod') {
+        // Notify HOD of new event in their assigned category
+        const eventCategory = eventData.department_club;
+        const [hods] = await db.query(
+          "SELECT id FROM profiles WHERE role = 'hod' AND (department = ? OR club = ? OR professional_society = ?)",
+          [eventCategory, eventCategory, eventCategory]
+        );
 
-      for (const hod of hods) {
-        await createNotification(
-          hod.id,
-          eventId,
-          `New event submission: "${eventData.title}" requires your approval.`
-        );
-      }
-    } else {
-      // Notify Deans of new event (Skipped HOD)
-      const [deans] = await db.query("SELECT id FROM profiles WHERE role = 'dean'");
-      for (const dean of deans) {
-        await createNotification(
-          dean.id,
-          eventId,
-          `New direct submission (No HOD): "${eventData.title}" requires your review.`
-        );
+        for (const hod of hods) {
+          await createNotification(
+            hod.id,
+            eventId,
+            `New event submission: "${eventData.title}" requires your approval.`
+          );
+        }
+      } else {
+        // Notify Deans of new event (Skipped HOD)
+        const [deans] = await db.query("SELECT id FROM profiles WHERE role = 'dean'");
+        for (const dean of deans) {
+          await createNotification(
+            dean.id,
+            eventId,
+            `New direct submission (No HOD): "${eventData.title}" requires your review.`
+          );
+        }
       }
     }
 
@@ -266,7 +268,7 @@ const updateEvent = async (req, res, next) => {
     const userRole = req.user.role;
 
     // Check if event exists and user has permission
-    const [events] = await db.query('SELECT submitted_by FROM events WHERE id = ?', [id]);
+    const [events] = await db.query('SELECT submitted_by, status FROM events WHERE id = ?', [id]);
     
     if (events.length === 0) {
       return res.status(404).json({ error: 'Event not found' });
@@ -318,6 +320,37 @@ const updateEvent = async (req, res, next) => {
       `UPDATE events SET ${fields.join(', ')} WHERE id = ?`,
       values
     );
+
+    // If a draft is being submitted (status changed from draft to pending), send notifications
+    const oldStatus = events[0].status;
+    const newStatus = eventData.status;
+    if (oldStatus === 'draft' && newStatus && newStatus !== 'draft') {
+      const eventTitle = eventData.title || 'Untitled Event';
+      const eventCategory = eventData.department_club;
+
+      if (newStatus === 'pending_hod') {
+        const [hods] = await db.query(
+          "SELECT id FROM profiles WHERE role = 'hod' AND (department = ? OR club = ? OR professional_society = ?)",
+          [eventCategory, eventCategory, eventCategory]
+        );
+        for (const hod of hods) {
+          await createNotification(
+            hod.id,
+            id,
+            `New event submission: "${eventTitle}" requires your approval.`
+          );
+        }
+      } else if (newStatus === 'pending_dean') {
+        const [deans] = await db.query("SELECT id FROM profiles WHERE role = 'dean'");
+        for (const dean of deans) {
+          await createNotification(
+            dean.id,
+            id,
+            `New direct submission (No HOD): "${eventTitle}" requires your review.`
+          );
+        }
+      }
+    }
     
     res.json({ message: 'Event updated successfully' });
   } catch (error) {

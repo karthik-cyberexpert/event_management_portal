@@ -33,6 +33,7 @@ export function canCoordinatorEdit(event: any): boolean {
   
   const { status, hod_approval_at } = event;
   
+  if (status === 'draft') return true;
   if (status === 'returned_to_coordinator') return true;
   if (status === 'pending_hod' || status === 'resubmitted') return true;
   if (status === 'pending_dean' && !hod_approval_at) return true;

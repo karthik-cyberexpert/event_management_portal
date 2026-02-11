@@ -1,4 +1,22 @@
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
+
+const deleteFiles = (fileUrls) => {
+  if (!fileUrls || !Array.isArray(fileUrls)) return;
+  fileUrls.forEach(url => {
+    try {
+      const filename = url.split('/').pop();
+      const filePath = path.join(__dirname, '../../uploads', filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Deleted old file: ${filename}`);
+      }
+    } catch (err) {
+      console.error(`Failed to delete file: ${url}`, err);
+    }
+  });
+};
 
 /**
  * Get report for an event
@@ -67,7 +85,7 @@ const upsertReport = async (req, res, next) => {
 
     // Check if report exists
     const [existing] = await db.query(
-      'SELECT event_id, report_password FROM event_reports WHERE event_id = ?',
+      'SELECT event_id, report_password, report_photo_urls FROM event_reports WHERE event_id = ?',
       [eventId]
     );
 
@@ -82,11 +100,17 @@ const upsertReport = async (req, res, next) => {
     }
 
     if (existing.length > 0) {
-      // Check regeneration limit (allow initial + 1 regeneration)
-      const currentCount = existing[0].regeneration_count || 0;
-      if (currentCount >= 1) {
-        return res.status(403).json({ error: 'Report regeneration limit reached (maximum 1 regeneration allowed).' });
+      // Get old photo URLs for cleanup
+      let oldPhotoUrls = [];
+      try {
+        const oldPhotos = existing[0].report_photo_urls;
+        if (oldPhotos) {
+          oldPhotoUrls = typeof oldPhotos === 'string' ? JSON.parse(oldPhotos) : oldPhotos;
+        }
+      } catch (e) {
+        console.error('Error parsing old photo URLs:', e);
       }
+      // Regeneration limit removed (infinite regeneration allowed)
 
       // Update and increment regeneration count
       await db.query(
@@ -112,6 +136,11 @@ const upsertReport = async (req, res, next) => {
           eventId
         ]
       );
+
+      // Delete old files from disk
+      if (oldPhotoUrls.length > 0) {
+        deleteFiles(oldPhotoUrls);
+      }
     } else {
       // Insert
       await db.query(

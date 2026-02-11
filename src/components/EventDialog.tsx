@@ -34,7 +34,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Plus, Trash2, MessageSquare, UploadCloud, Image } from 'lucide-react';
+import { Terminal, Plus, Trash2, MessageSquare, UploadCloud, Image, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import TimePicker from './TimePicker';
@@ -258,6 +258,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false);
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false);
@@ -265,6 +266,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
   const isCoordinator = profile?.role === 'coordinator';
+  const isDraftMode = event?.status === 'draft';
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -534,10 +536,15 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       if (isEditMode) {
         // When resubmitting a returned event, set status to 'resubmitted' and reset approvals
+        // When submitting a draft, determine initial status based on profile assignment
         // Otherwise, maintain the current status (e.g., if editing while pending_hod or pending_dean)
         let newStatus = event.status;
         if (event.status === 'returned_to_coordinator') {
           newStatus = 'resubmitted';
+        } else if (event.status === 'draft') {
+          // Determine initial status the same way backend does for new events
+          const hasAssignment = profile?.department || profile?.club || profile?.professional_society;
+          newStatus = hasAssignment ? 'pending_hod' : 'pending_dean';
         }
         
         await api.events.update(event.id, { 
@@ -556,7 +563,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         });
       }
 
-      toast.success(`Event ${isEditMode ? 'updated and resubmitted' : 'created'} successfully.`);
+      toast.success(`Event ${isDraftMode ? 'submitted for approval' : (isEditMode ? 'updated and resubmitted' : 'created')} successfully.`);
       onSuccess();
       onClose();
     } catch (e: any) {
@@ -564,6 +571,97 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       console.error(e);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!user) return;
+    setIsSavingDraft(true);
+
+    try {
+      const values = form.getValues();
+      
+      // Only require a title for drafts
+      if (!values.title?.trim()) {
+        toast.error('Please enter at least an event title to save as draft.');
+        setIsSavingDraft(false);
+        return;
+      }
+
+      let finalPosterUrl = values.poster_url;
+      if (posterFile) {
+        try {
+          finalPosterUrl = await uploadPoster(posterFile);
+        } catch {
+          // Poster upload failed, but it's ok for a draft
+          finalPosterUrl = null;
+        }
+      }
+
+      const transformArrayField = (base: string[], other: string | undefined) => {
+        const result = [...(base || [])];
+        if (other?.trim()) result.push(other.trim());
+        return result;
+      };
+
+      const finalCategory = transformArrayField(values.category, values.category_others);
+      const finalAudience = transformArrayField(values.target_audience, values.target_audience_others);
+      const finalFunding = transformArrayField(values.funding_source || [], values.funding_source_others);
+      const finalPromotion = transformArrayField(values.promotion_strategy, values.promotion_strategy_others);
+      const coordinatorNames = values.coordinators?.map(c => c.name) || [];
+      const coordinatorContacts = values.coordinators?.map(c => c.contact) || [];
+      const speakerNames = values.speakers_list?.map(s => s.name) || [];
+      const speakerDetails = values.speakers_list?.map(s => s.details) || [];
+      const speakerContacts = values.speakers_list?.map(s => s.contact) || [];
+
+      const eventData = {
+        title: values.title,
+        description: values.description || null,
+        academic_year: values.academic_year || null,
+        program_driven_by: values.program_driven_by || null,
+        quarter: values.quarter || null,
+        program_type: values.program_type || null,
+        program_theme: values.program_theme || null,
+        event_date: values.event_date || null,
+        end_date: values.end_date || null,
+        start_time: values.start_time || null,
+        end_time: values.end_time || null,
+        expected_audience: values.expected_audience || null,
+        department_club: values.department_club || null,
+        coordinator_name: coordinatorNames,
+        coordinator_contact: coordinatorContacts,
+        mode_of_event: values.mode_of_event || null,
+        category: finalCategory,
+        objective: values.objective || null,
+        sdg_alignment: values.sdg_alignment || [],
+        target_audience: finalAudience,
+        proposed_outcomes: values.proposed_outcomes || null,
+        speakers: speakerNames,
+        speaker_details: speakerDetails,
+        speaker_contacts: speakerContacts,
+        budget_estimate: values.budget_estimate || 0,
+        funding_source: finalFunding,
+        promotion_strategy: finalPromotion,
+        venue_id: values.venue_id === 'other' ? null : (values.venue_id || null),
+        other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
+        poster_url: finalPosterUrl || null,
+        status: 'draft',
+      };
+
+      if (isEditMode && isDraftMode) {
+        await api.events.update(event.id, eventData);
+      } else {
+        await api.events.create({ ...eventData, submitted_by: user.id });
+      }
+
+      toast.success('Event saved as draft.');
+      onSuccess();
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save draft.');
+      console.error(e);
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -939,7 +1037,21 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
               )}
 
               <DialogFooter>
-                {isReadOnly ? (<Button type="button" variant="outline" onClick={onClose}>Close</Button>) : (<><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : (isEditMode ? 'Update & Resubmit' : 'Submit for Approval')}</Button></>)}
+                {isReadOnly ? (<Button type="button" variant="outline" onClick={onClose}>Close</Button>) : (<>
+                  <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+                  {(!isEditMode || isDraftMode) && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleSaveAsDraft} 
+                      disabled={isSubmitting || isSavingDraft}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      {isSavingDraft ? 'Saving...' : <><Save className="mr-2 h-4 w-4" /> Save as Draft</>}
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={isSubmitting || isSavingDraft}>{isSubmitting ? 'Submitting...' : (isEditMode ? 'Update & Resubmit' : 'Submit for Approval')}</Button>
+                </>)}
               </DialogFooter>
             </form>
           </Form>
