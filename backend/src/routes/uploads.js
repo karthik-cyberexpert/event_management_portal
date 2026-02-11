@@ -53,7 +53,7 @@ router.post('/', authenticate, upload.single('file'), (req, res) => {
  * @desc    Upload multiple files
  * @access  Private
  */
-router.post('/multiple', authenticate, upload.array('files', 5), (req, res) => {
+router.post('/multiple', authenticate, upload.array('files', 10), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'Please upload files' });
   }

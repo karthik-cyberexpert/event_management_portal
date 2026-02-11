@@ -82,7 +82,13 @@ const upsertReport = async (req, res, next) => {
     }
 
     if (existing.length > 0) {
-      // Update
+      // Check regeneration limit (allow initial + 1 regeneration)
+      const currentCount = existing[0].regeneration_count || 0;
+      if (currentCount >= 1) {
+        return res.status(403).json({ error: 'Report regeneration limit reached (maximum 1 regeneration allowed).' });
+      }
+
+      // Update and increment regeneration count
       await db.query(
         `UPDATE event_reports 
          SET final_report_remarks = ?, 
@@ -92,6 +98,7 @@ const upsertReport = async (req, res, next) => {
              social_media_links = ?, 
              report_photo_urls = ?,
              activity_lead_by = ?,
+             regeneration_count = regeneration_count + 1,
              submitted_at = NOW()
          WHERE event_id = ?`,
         [
@@ -109,8 +116,8 @@ const upsertReport = async (req, res, next) => {
       // Insert
       await db.query(
         `INSERT INTO event_reports 
-         (event_id, final_report_remarks, student_participants, faculty_participants, external_participants, social_media_links, report_photo_urls, activity_lead_by, report_password)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (event_id, final_report_remarks, student_participants, faculty_participants, external_participants, social_media_links, report_photo_urls, activity_lead_by, report_password, regeneration_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
         [
           eventId,
           final_report_remarks,

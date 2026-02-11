@@ -79,6 +79,7 @@ type ReportData = {
   formData: ReportFormData;
   durationHours: number;
   password?: string;
+  regenerationCount?: number;
 };
 
 type EventReportGeneratorDialogProps = {
@@ -171,6 +172,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           },
           durationHours: event.activity_duration_hours || calculateDurationHours(event),
           password: report.report_password,
+          regenerationCount: report.regeneration_count || 0,
         };
 
         // Try to regenerate AI objective if empty, or use existing event objective
@@ -641,7 +643,25 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
             </div>
             {renderReportContent()}
             <DialogFooter className="print:hidden">
-              {!isReadOnly && <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isGenerating}>Back to Edit</Button>}
+              {!isReadOnly ? (
+                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isGenerating}>Back to Edit</Button>
+              ) : (
+                reportData && (reportData.regenerationCount || 0) < 1 && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsReadOnly(false);
+                      setStep(1);
+                    }} 
+                    disabled={isGenerating}
+                    className="mr-auto text-amber-600 border-amber-200 hover:bg-amber-50"
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Regenerate Report (One-time)
+                  </Button>
+                )
+              )}
               <Button onClick={handleDownloadPDF} disabled={isGenerating} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200 shadow-lg">
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                 Download Password Protected PDF

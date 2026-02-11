@@ -180,6 +180,7 @@ CREATE TABLE `event_reports` (
   `external_participants` INT DEFAULT 0,
   `social_media_links` JSON DEFAULT NULL,
   `report_photo_urls` JSON DEFAULT NULL COMMENT 'Array of photo URLs',
+  `regeneration_count` INT DEFAULT 0,
   `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),
   CONSTRAINT `event_reports_event_id_fkey` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE

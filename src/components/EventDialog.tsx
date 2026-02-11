@@ -534,7 +534,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       if (isEditMode) {
         // When resubmitting a returned event, set status to 'resubmitted' and reset approvals
-        let newStatus = 'pending_hod';
+        // Otherwise, maintain the current status (e.g., if editing while pending_hod or pending_dean)
+        let newStatus = event.status;
         if (event.status === 'returned_to_coordinator') {
           newStatus = 'resubmitted';
         }

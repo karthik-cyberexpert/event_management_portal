@@ -24,7 +24,7 @@ import {
 import { format } from 'date-fns';
 import EventDialog from '@/components/EventDialog';
 import { toast } from 'sonner';
-import { cn, isEventFinished } from '@/lib/utils';
+import { cn, isEventFinished, canCoordinatorEdit } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReturnReasonDialog from '@/components/ReturnReasonDialog';
@@ -86,10 +86,10 @@ const CoordinatorDashboard = () => {
   };
 
   const handleViewAction = (event: any) => {
-    const isReturned = event.status === 'returned_to_coordinator';
+    const isEditable = canCoordinatorEdit(event);
     setSelectedEvent({ 
       ...event, 
-      mode: isReturned ? 'edit' : 'view' 
+      mode: isEditable ? 'edit' : 'view' 
     });
   };
   
@@ -180,7 +180,7 @@ const CoordinatorDashboard = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem onClick={() => handleViewAction(event)} className="cursor-pointer">
-                          {event.status === 'returned_to_coordinator' ? (
+                          {canCoordinatorEdit(event) ? (
                             <><PlusCircle className="mr-2 h-4 w-4" /> Edit Event</>
                           ) : (
                             <><List className="mr-2 h-4 w-4" /> View Details</>
