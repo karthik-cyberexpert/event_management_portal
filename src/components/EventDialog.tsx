@@ -134,6 +134,45 @@ const SDG_GOALS = [
   'SDG 17: Partnerships for the Goals',
 ];
 
+// Minimum hours required per program level
+const LEVEL_MIN_HOURS: Record<number, number> = { 1: 2, 2: 4, 3: 6, 4: 7 };
+
+// College working hours per day: 8:30 AM to 4:05 PM = 7.583 hrs
+const COLLEGE_HOURS_PER_DAY = 7.583;
+
+// Calculate total event duration in hours from dates and times
+const calculateEventDurationHours = (
+  eventDate: string,
+  endDate: string | null | undefined,
+  startTime: string,
+  endTime: string
+): number => {
+  if (!eventDate || !startTime || !endTime) return 0;
+  const actualEndDate = endDate || eventDate;
+  const start = new Date(`${eventDate}T${startTime}`);
+  const end = new Date(`${actualEndDate}T${endTime}`);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+
+  // Same day: simple difference
+  if (eventDate === actualEndDate) {
+    return Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60 * 60));
+  }
+
+  // Multi-day: first day partial + intermediate full days + last day partial
+  const firstDayEnd = new Date(`${eventDate}T16:05:00`);
+  const firstDayHours = Math.max(0, (firstDayEnd.getTime() - start.getTime()) / (1000 * 60 * 60));
+
+  const lastDayStart = new Date(`${actualEndDate}T08:30:00`);
+  const lastDayHours = Math.max(0, (end.getTime() - lastDayStart.getTime()) / (1000 * 60 * 60));
+
+  const startD = new Date(eventDate);
+  const endD = new Date(actualEndDate);
+  const diffDays = Math.round((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
+  const intermediateDays = Math.max(0, diffDays - 1);
+
+  return firstDayHours + (intermediateDays * COLLEGE_HOURS_PER_DAY) + lastDayHours;
+};
+
 // --- Zod Schema ---
 
 const coordinatorSchema = z.object({
@@ -224,9 +263,29 @@ const formSchema = z.object({
     });
   }
   
-  
-  // Word count validation removed as we are using character limits in z.string().max() directly above.
-  // Leaving this block empty as we removed the custom word count issues.
+  // Minimum hours validation based on program level
+  if (data.program_type && data.start_time && data.end_time && data.event_date) {
+    const levelMatch = data.program_type.match(/^Level\s+(\d)/i);
+    if (levelMatch) {
+      const level = parseInt(levelMatch[1], 10);
+      const minHours = LEVEL_MIN_HOURS[level];
+      if (minHours) {
+        const totalHours = calculateEventDurationHours(
+          data.event_date,
+          data.end_date,
+          data.start_time,
+          data.end_time
+        );
+        if (totalHours < minHours) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Level ${level} programs require a minimum of ${minHours} hours. Current duration: ${totalHours.toFixed(1)} hours.`,
+            path: ['end_time'],
+          });
+        }
+      }
+    }
+  }
   
   // Resubmission reason required if status is returned_to_coordinator
   if (data.status === 'returned_to_coordinator' && !data.coordinator_resubmission_reason?.trim()) {
@@ -449,6 +508,28 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
   const onSubmit = async (values: FormSchema) => {
     if (!user) return;
+
+    // Check minimum duration based on program level and show toast
+    if (values.program_type && values.start_time && values.end_time && values.event_date) {
+      const levelMatch = values.program_type.match(/^Level\s+(\d)/i);
+      if (levelMatch) {
+        const level = parseInt(levelMatch[1], 10);
+        const minHours = LEVEL_MIN_HOURS[level];
+        if (minHours) {
+          const totalHours = calculateEventDurationHours(
+            values.event_date,
+            values.end_date,
+            values.start_time,
+            values.end_time
+          );
+          if (totalHours < minHours) {
+            toast.error(`Level ${level} programs require a minimum of ${minHours} hours. Current duration: ${totalHours.toFixed(1)} hours.`);
+            return;
+          }
+        }
+      }
+    }
+
     setIsSubmitting(true);
 
     let finalPosterUrl = values.poster_url;
