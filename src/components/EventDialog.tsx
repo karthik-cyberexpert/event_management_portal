@@ -85,7 +85,7 @@ const getAcademicYearOptions = () => {
 
 // --- Constants for Dropdowns & Checkboxes ---
 
-const PROGRAM_DRIVEN_BY = ['Institute Council', 'Student Council'];
+const PROGRAM_DRIVEN_BY = ['IIC Calendar Activity', 'MIC Driven Activity', 'Self Driven Activity', 'Celebration Activity'];
 const QUARTERS = ['Quarter I', 'Quarter II', 'Quarter III', 'Quarter IV'];
 const PROGRAM_TYPES = [
   'Level 1 - Expert Talk', 'Level 1 - Exposure Visit', 'Level 1 - Mentoring Session', 'Level 1- Exhibition',
@@ -295,7 +295,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       promotion_strategy_others: '',
       venue_id: '',
       other_venue_details: '',
-      event_date: '',
+      event_date: format(new Date(), 'yyyy-MM-dd'),
       end_date: '',
       start_time: '',
       end_time: '',
@@ -428,6 +428,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         promotion_strategy: [],
         expected_audience: undefined,
         budget_estimate: undefined,
+        event_date: format(new Date(), 'yyyy-MM-dd'),
+        end_date: '',
         poster_url: '',
         coordinator_resubmission_reason: '',
         status: 'pending_hod', // Default status for new event
@@ -974,9 +976,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                             </div>
                           </FormControl>
                           <FormMessage>{form.formState.errors.poster_url?.message}</FormMessage>
-                          {currentPosterUrl && !posterFile && (
-                            <Button type="button" variant="link" size="sm" onClick={() => setIsPosterDialogOpen(true)} className="p-0 h-auto">
-                              View Current Poster
+                          {(currentPosterUrl || posterFile) && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsPosterDialogOpen(true)} className="mt-2 border-2 border-blue-400 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-500 font-medium shadow-sm transition-all">
+                              <Image className="h-4 w-4 mr-2 text-blue-600" /> View Poster
                             </Button>
                           )}
                         </FormItem>
@@ -1058,12 +1060,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         </DialogContent>
       </Dialog>
       
-      {event && currentPosterUrl && (
+      {(currentPosterUrl || posterFile) && (
         <PosterDialog
           isOpen={isPosterDialogOpen}
           onClose={() => setIsPosterDialogOpen(false)}
-          posterUrl={currentPosterUrl}
-          eventTitle={event.title}
+          posterUrl={posterFile ? URL.createObjectURL(posterFile) : currentPosterUrl}
+          eventTitle={form.getValues('title') || 'New Event'}
         />
       )}
       

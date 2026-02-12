@@ -199,7 +199,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       student_participants: event?.student_participants ?? 0,
       faculty_participants: event?.faculty_participants ?? 0,
       external_participants: event?.external_participants ?? 0,
-      activity_lead_by: event?.activity_lead_by || '',
+      activity_lead_by: event?.program_driven_by || event?.activity_lead_by || '',
       final_report_remarks: event?.final_report_remarks || '',
       photos: [],
       social_media_selection: [],
@@ -461,7 +461,25 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                 <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
                   <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
                 </div>
-                {/* Row 15 */}
+                {/* Row 15 - Speaker Details */}
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+                  <span className="font-bold col-span-2">Speaker Details:</span>
+                  <span className="col-span-2">
+                    {(() => {
+                      const speakers = event.speakers || [];
+                      const contacts = event.speaker_contacts || [];
+                      const details = event.speaker_details || [];
+                      if (speakers.length === 0 || !speakers[0]) return 'N/A';
+                      return speakers.map((name: string, i: number) => (
+                        <div key={i} className={i > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
+                          <div>{name}{contacts[i] ? ` — ${contacts[i]}` : ''}</div>
+                          {details[i] && <div className="text-xs text-gray-600">{details[i]}</div>}
+                        </div>
+                      ));
+                    })()}
+                  </span>
+                </div>
+                {/* Row 16 */}
                 <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
                   <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
                 </div>
@@ -564,24 +582,11 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                 <FormField control={form.control} name="faculty_participants" render={({ field }) => (<FormItem><FormLabel>No. of Faculty Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="external_participants" render={({ field }) => (<FormItem><FormLabel>No. of External Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 
-                <FormField control={form.control} name="activity_lead_by" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Activity Lead By</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select lead role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ACTIVITY_LEAD_BY_OPTIONS.map(option => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <FormItem>
+                  <FormLabel>Activity Lead By</FormLabel>
+                  <Input value={event?.program_driven_by || form.getValues('activity_lead_by') || 'N/A'} disabled />
+                  <FormDescription className="text-xs">Auto-filled from Program Driven By.</FormDescription>
+                </FormItem>
                 
                 <FormItem>
                   <FormLabel>Duration (in hours)</FormLabel>

@@ -17,6 +17,7 @@ import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
 import ManageProfessionalSocieties from "./pages/admin/ManageProfessionalSocieties";
 import OnboardingPage from "./pages/Onboarding";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -73,7 +74,7 @@ const AppRoutes = () => {
               </Layout>
             )
           ) : (
-            <Navigate to="/login" replace />
+            <LandingPage />
           )
         } 
       />

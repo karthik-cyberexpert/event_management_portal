@@ -40,6 +40,16 @@ import {
 import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog';
 import { api } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Calendar as MiniCalendar } from '@/components/ui/calendar';
 
 const statusColors = {
@@ -63,6 +73,7 @@ const CoordinatorDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isReturnReasonDialogOpen, setIsReturnReasonDialogOpen] = useState(false);
   const [isReportGeneratorOpen, setIsReportGeneratorOpen] = useState(false);
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -206,6 +217,11 @@ const CoordinatorDashboard = () => {
                             <Trash2 className="mr-2 h-4 w-4" /> Delete Draft
                           </DropdownMenuItem>
                         )}
+                        {(event.status.startsWith('pending') || event.status === 'resubmitted') && (
+                          <DropdownMenuItem onClick={() => setDeleteEventId(event.id)} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                          </DropdownMenuItem>
+                        )}
                         {event.status === 'approved' && (
                           <DropdownMenuItem onClick={() => handleDownloadReport(event)} className="cursor-pointer text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50">
                             {event.has_report ? (
@@ -239,6 +255,18 @@ const CoordinatorDashboard = () => {
       fetchEvents();
     } catch {
       toast.error('Failed to delete draft.');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await api.events.delete(eventId);
+      toast.success('Event deleted successfully.');
+      fetchEvents();
+    } catch {
+      toast.error('Failed to delete event.');
+    } finally {
+      setDeleteEventId(null);
     }
   };
 
@@ -397,6 +425,26 @@ const CoordinatorDashboard = () => {
           }}
         />
       )}
+
+      <AlertDialog open={!!deleteEventId} onOpenChange={(open) => !open && setDeleteEventId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the event from the database. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
