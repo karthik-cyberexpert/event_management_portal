@@ -461,7 +461,7 @@ export default function LandingPage() {
           <div className="rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50 border border-slate-100">
             <iframe
               title="ACE Location"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890.0001!2d77.8191!3d12.7409!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae73fd16e4bfab%3A0x8e9da97789ed839a!2sAdhiyamaan%20College%20of%20Engineering!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src="https://maps.google.com/maps?q=Adhiyamaan+College+of+Engineering,+Hosur&t=&z=15&ie=UTF8&iwloc=B&output=embed"
               width="100%"
               height="350"
               style={{ border: 0 }}
