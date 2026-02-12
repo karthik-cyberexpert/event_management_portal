@@ -124,11 +124,11 @@ export default function LandingPage() {
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection('#home')}>
             <img src="/ace.jpeg" alt="ACE Logo" className="h-12 w-12 rounded-xl object-contain shadow-md" />
             <div className="hidden sm:block">
-              <p className="font-extrabold text-lg leading-tight bg-gradient-to-r from-indigo-700 to-blue-600 bg-clip-text text-transparent">
-                ACE — IIC
+              <p className="font-extrabold text-base leading-tight bg-gradient-to-r from-indigo-700 to-blue-600 bg-clip-text text-transparent">
+                Adhiyamaan College of Engineering
               </p>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Innovation Council
+                Institution's Innovation Council
               </p>
             </div>
           </div>
@@ -481,7 +481,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <img src="/ace.jpeg" alt="ACE" className="h-12 w-12 rounded-xl object-contain" />
               <div>
-                <p className="font-bold text-lg">ACE — IIC</p>
+                <p className="font-bold text-base">Adhiyamaan College of Engineering</p>
                 <p className="text-slate-400 text-xs">Institution's Innovation Council</p>
               </div>
             </div>
