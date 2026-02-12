@@ -8,7 +8,7 @@ import {
   Trophy,
   Mail,
   Phone,
-  MapPin,
+
   ChevronDown,
   ArrowRight,
   Sparkles,
@@ -91,12 +91,6 @@ const PROGRAM_TYPES_BY_LEVEL = [
   },
 ];
 
-const STATS = [
-  { value: '500+', label: 'Events Organized' },
-  { value: '10,000+', label: 'Students Impacted' },
-  { value: '50+', label: 'Industry Partners' },
-  { value: '4.5★', label: 'IIC Star Rating' },
-];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -267,19 +261,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── STATS BAR ─── */}
-      <section className="relative -mt-8 z-20 max-w-5xl mx-auto px-6">
-        <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/70 border border-slate-100 p-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                {s.value}
-              </p>
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ─── ABOUT SECTION ─── */}
       <section id="about" className="py-24 px-6">
@@ -418,52 +400,59 @@ export default function LandingPage() {
           </div>
 
           {/* Contact Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <Card className="border-0 shadow-xl shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300 hover:-translate-y-1 rounded-2xl text-center">
-              <CardContent className="p-8">
-                <div className="bg-indigo-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <MapPin className="h-7 w-7 text-indigo-600" />
+          <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-3xl mx-auto">
+            {/* Mr. Mohanraj Card */}
+            <Card className="group border-0 shadow-xl shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 hover:-translate-y-2 rounded-3xl overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600" />
+              <CardContent className="p-8 text-center">
+                <div className="relative mx-auto mb-5">
+                  <div className="bg-gradient-to-br from-indigo-100 to-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-indigo-100">
+                    <Users className="h-9 w-9 text-indigo-600" />
+                  </div>
                 </div>
-                <h4 className="font-bold text-lg text-slate-900 mb-2">Address</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Adhiyamaan College of Engineering
-                  <br />
-                  Dr. M.G.R. Nagar
-                  <br />
-                  Hosur – 635130, Tamil Nadu
-                </p>
+                <h4 className="font-black text-xl text-slate-900 mb-1">Mr. Mohanraj</h4>
+                <div className="inline-flex items-center gap-1.5 bg-indigo-100/80 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+                  IIC Coordinator
+                </div>
+                <div className="bg-slate-50 rounded-2xl p-4 mt-2">
+                  <div className="flex items-center justify-center gap-2.5">
+                    <div className="bg-emerald-100 w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Phone className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <a
+                      href="tel:+919791237837"
+                      className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                    >
+                      +91 97912 37837
+                    </a>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-xl shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300 hover:-translate-y-1 rounded-2xl text-center">
-              <CardContent className="p-8">
-                <div className="bg-emerald-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Phone className="h-7 w-7 text-emerald-600" />
+            {/* Dr. Dhanasekar Card */}
+            <Card className="group border-0 shadow-xl shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 hover:-translate-y-2 rounded-3xl overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+              <CardContent className="p-8 text-center">
+                <div className="relative mx-auto mb-5">
+                  <div className="bg-gradient-to-br from-blue-100 to-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-100">
+                    <GraduationCap className="h-9 w-9 text-blue-600" />
+                  </div>
                 </div>
-                <h4 className="font-bold text-lg text-slate-900 mb-2">Phone</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  <a href="tel:+914344235500" className="hover:text-indigo-600 transition-colors">
-                    +91 4344 235 500
-                  </a>
-                  <br />
-                  <span className="text-xs text-slate-400">Mon – Sat, 8:30 AM – 4:05 PM</span>
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-xl shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300 hover:-translate-y-1 rounded-2xl text-center">
-              <CardContent className="p-8">
-                <div className="bg-amber-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Mail className="h-7 w-7 text-amber-600" />
+                <h4 className="font-black text-xl text-slate-900 mb-1">Dr. Dhanasekar</h4>
+                <div className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+                  Dean — Industry Relations
                 </div>
-                <h4 className="font-bold text-lg text-slate-900 mb-2">Email</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  <a href="mailto:iic@adhi.edu.in" className="hover:text-indigo-600 transition-colors">
-                    iic@adhi.edu.in
-                  </a>
-                  <br />
-                  <span className="text-xs text-slate-400">We respond within 24 hours</span>
-                </p>
+                <div className="bg-slate-50 rounded-2xl p-4 mt-2">
+                  <div className="flex items-center justify-center gap-2.5">
+                    <div className="bg-indigo-100 w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="h-4 w-4 text-indigo-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">
+                      Industry Relations
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
