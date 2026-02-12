@@ -209,6 +209,12 @@ const createEvent = async (req, res, next) => {
         values.push(initialStatus);
       } else if (jsonFields.includes(field)) {
         values.push(JSON.stringify(eventData[field] || []));
+      } else if (isDraft && field === 'event_date' && !eventData[field]) {
+        values.push('1970-01-01');
+      } else if (isDraft && field === 'start_time' && !eventData[field]) {
+        values.push('00:00:00');
+      } else if (isDraft && field === 'end_time' && !eventData[field]) {
+        values.push('00:00:00');
       } else {
         values.push(eventData[field] === undefined ? null : eventData[field]);
       }

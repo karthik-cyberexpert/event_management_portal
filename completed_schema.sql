@@ -99,6 +99,7 @@ CREATE TABLE `events` (
   `description` TEXT DEFAULT NULL,
   `unique_code` VARCHAR(50) UNIQUE DEFAULT NULL,
   `status` ENUM(
+    'draft',
     'pending_hod', 'pending_dean', 'pending_principal', 
     'approved', 'rejected', 'cancelled', 
     'returned_to_coordinator', 'returned_to_hod', 'returned_to_dean', 
