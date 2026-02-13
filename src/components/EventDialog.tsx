@@ -134,8 +134,13 @@ const SDG_GOALS = [
   'SDG 17: Partnerships for the Goals',
 ];
 
-// Minimum hours required per program level
-const LEVEL_MIN_HOURS: Record<number, number> = { 1: 2, 2: 4, 3: 6, 4: 7 };
+// Duration limits per program level (in hours)
+const LEVEL_DURATION_LIMITS: Record<number, { min: number; max?: number }> = { 
+  1: { min: 2, max: 4 }, 
+  2: { min: 5, max: 7 }, 
+  3: { min: 8, max: 15 }, 
+  4: { min: 16 } 
+};
 
 // College working hours per day: 8:30 AM to 4:05 PM = 7.583 hrs
 const COLLEGE_HOURS_PER_DAY = 7.583;
@@ -268,18 +273,27 @@ const formSchema = z.object({
     const levelMatch = data.program_type.match(/^Level\s+(\d)/i);
     if (levelMatch) {
       const level = parseInt(levelMatch[1], 10);
-      const minHours = LEVEL_MIN_HOURS[level];
-      if (minHours) {
+      const limits = LEVEL_DURATION_LIMITS[level];
+      if (limits) {
         const totalHours = calculateEventDurationHours(
           data.event_date,
           data.end_date,
           data.start_time,
           data.end_time
         );
-        if (totalHours < minHours) {
+        
+        if (totalHours < limits.min) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Level ${level} programs require a minimum of ${minHours} hours. Current duration: ${totalHours.toFixed(1)} hours.`,
+            message: `Level ${level} programs require a minimum of ${limits.min} hours. Current duration: ${totalHours.toFixed(1)} hours.`,
+            path: ['end_time'],
+          });
+        }
+        
+        if (limits.max && totalHours > limits.max) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Level ${level} programs must not exceed ${limits.max} hours. Current duration: ${totalHours.toFixed(1)} hours.`,
             path: ['end_time'],
           });
         }
@@ -514,17 +528,23 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       const levelMatch = values.program_type.match(/^Level\s+(\d)/i);
       if (levelMatch) {
         const level = parseInt(levelMatch[1], 10);
-        const minHours = LEVEL_MIN_HOURS[level];
-        if (minHours) {
+        const limits = LEVEL_DURATION_LIMITS[level];
+        if (limits) {
           const totalHours = calculateEventDurationHours(
             values.event_date,
             values.end_date,
             values.start_time,
             values.end_time
           );
-          if (totalHours < minHours) {
-            toast.error(`Level ${level} programs require a minimum of ${minHours} hours. Current duration: ${totalHours.toFixed(1)} hours.`);
+          
+          if (totalHours < limits.min) {
+            toast.error(`Level ${level} programs require a minimum of ${limits.min} hours. Current duration: ${totalHours.toFixed(1)} hours.`);
             return;
+          }
+
+          if (limits.max && totalHours > limits.max) {
+             toast.error(`Level ${level} programs must not exceed ${limits.max} hours. Current duration: ${totalHours.toFixed(1)} hours.`);
+             return;
           }
         }
       }

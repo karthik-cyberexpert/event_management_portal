@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog';
 import { api } from '@/lib/api';
+import { generateApprovalPDF } from '@/lib/pdfGenerator';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
@@ -220,6 +221,11 @@ const CoordinatorDashboard = () => {
                         {(event.status.startsWith('pending') || event.status === 'resubmitted') && (
                           <DropdownMenuItem onClick={() => setDeleteEventId(event.id)} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                          </DropdownMenuItem>
+                        )}
+                        {event.status === 'approved' && (
+                          <DropdownMenuItem onClick={() => generateApprovalPDF(event)} className="cursor-pointer text-blue-600 focus:text-blue-700 focus:bg-blue-50">
+                            <ShieldCheck className="mr-2 h-4 w-4" /> Download Approval
                           </DropdownMenuItem>
                         )}
                         {event.status === 'approved' && (

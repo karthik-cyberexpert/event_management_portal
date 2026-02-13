@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -45,51 +46,69 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative bg-black overflow-hidden">
+      {/* Background Image with slight opacity */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-75"
+        style={{ backgroundImage: "url('/college.jpeg')" }}
+      />
+      
+      {/* Back Button */}
+      <Button 
+        variant="ghost" 
+        className="absolute top-4 left-4 md:top-8 md:left-8 text-white hover:text-white hover:bg-white/20 z-20"
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Home
+      </Button>
+
+      {/* Transparent Glassmorphism Card */}
+      <Card className="w-full max-w-md z-10 shadow-2xl border-white/20 bg-white/20 backdrop-blur-lg text-white">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Event Management System</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-white">Event Management System</CardTitle>
+          <CardDescription className="text-center text-white/90">
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-white">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your.email@example.com"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/80 focus:bg-white/10 focus:border-white/30 transition-all"
                 {...register('email')}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-red-300 font-medium">{errors.email.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-white">Password</Label>
               <PasswordInput
                 id="password"
                 placeholder="••••••••"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/80 focus:bg-white/10 focus:border-white/30 transition-all"
                 {...register('password')}
                 disabled={isLoading}
               />
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
+                <p className="text-sm text-red-300 font-medium">{errors.password.message}</p>
               )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-white text-slate-900 hover:bg-white/90 font-bold shadow-lg"
               disabled={isLoading}
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </Button>
-
           </CardFooter>
         </form>
       </Card>

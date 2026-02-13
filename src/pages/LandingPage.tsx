@@ -439,18 +439,21 @@ export default function LandingPage() {
                     <GraduationCap className="h-9 w-9 text-blue-600" />
                   </div>
                 </div>
-                <h4 className="font-black text-xl text-slate-900 mb-1">Dr. Dhanasekar</h4>
+                <h4 className="font-black text-xl text-slate-900 mb-1">Dr. Dhanasekaran</h4>
                 <div className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
                   Dean — Industry Relations
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-4 mt-2">
                   <div className="flex items-center justify-center gap-2.5">
-                    <div className="bg-indigo-100 w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Briefcase className="h-4 w-4 text-indigo-600" />
+                    <div className="bg-emerald-100 w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Phone className="h-4 w-4 text-emerald-600" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">
-                      Industry Relations
-                    </span>
+                    <a
+                      href="tel:+919043793491"
+                      className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                    >
+                      +91 9043793491
+                    </a>
                   </div>
                 </div>
               </CardContent>
