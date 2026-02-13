@@ -110,12 +110,12 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-100 text-slate-900 overflow-x-hidden">
       {/* ─── NAVBAR ─── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? 'bg-white/90 backdrop-blur-xl shadow-lg shadow-slate-200/50 py-3'
+            ? 'bg-slate-100/90 backdrop-blur-xl shadow-lg shadow-slate-200/50 py-3'
             : 'bg-transparent py-5'
         }`}
       >
@@ -139,7 +139,7 @@ export default function LandingPage() {
               <button
                 key={l.href}
                 onClick={() => scrollToSection(l.href)}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:text-indigo-600 hover:bg-slate-200 transition-all"
               >
                 {l.label}
               </button>
@@ -154,7 +154,7 @@ export default function LandingPage() {
 
           {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2 rounded-xl hover:bg-slate-200 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <div className="w-5 flex flex-col gap-1">
@@ -167,12 +167,12 @@ export default function LandingPage() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-xl border-t mt-2 px-6 py-4 space-y-2 animate-in slide-in-from-top-2 duration-300">
+          <div className="md:hidden bg-slate-100/95 backdrop-blur-xl border-t mt-2 px-6 py-4 space-y-2 animate-in slide-in-from-top-2 duration-300">
             {NAV_LINKS.map((l) => (
               <button
                 key={l.href}
                 onClick={() => scrollToSection(l.href)}
-                className="block w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                className="block w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 hover:text-indigo-600 transition-all"
               >
                 {l.label}
               </button>
@@ -192,41 +192,41 @@ export default function LandingPage() {
         id="home"
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-blue-50" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 to-blue-300/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-purple-200/30 to-pink-200/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+        {/* Animated Background - Dimmed */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-100 to-gray-200" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/10 to-blue-300/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-purple-200/5 to-pink-200/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-24 pb-16">
           {/* Logos */}
           <div className="flex items-center justify-center gap-6 mb-10">
-            <img src="/ace.jpeg" alt="ACE Logo" className="h-24 w-24 rounded-2xl object-contain shadow-xl shadow-indigo-200/50 border-2 border-white" />
-            <div className="h-16 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
-            <img src="/iic.jpg" alt="IIC Logo" className="h-24 w-24 rounded-2xl object-contain shadow-xl shadow-blue-200/50 border-2 border-white" />
+            <img src="/ace.jpeg" alt="ACE Logo" className="h-24 w-24 rounded-2xl object-contain shadow-xl shadow-indigo-200/50 border-2 border-white/50" />
+            <div className="h-16 w-px bg-gradient-to-b from-transparent via-slate-400 to-transparent" />
+            <img src="/iic.jpg" alt="IIC Logo" className="h-24 w-24 rounded-2xl object-contain shadow-xl shadow-blue-200/50 border-2 border-white/50" />
           </div>
 
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-indigo-100/80 text-indigo-700 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-sm border border-indigo-200/50">
+          <div className="inline-flex items-center gap-2 bg-indigo-100/50 text-indigo-800 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-sm border border-indigo-200/30">
             <Sparkles className="h-3.5 w-3.5" />
             Ministry of Education Initiative
           </div>
 
           {/* Title */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight mb-6">
-            <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-800 bg-clip-text text-transparent">
               Institution's
             </span>
             <br />
-            <span className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-indigo-700 via-blue-700 to-purple-700 bg-clip-text text-transparent">
               Innovation Council
             </span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto mb-4 leading-relaxed font-medium">
+          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-4 leading-relaxed font-medium">
             Adhiyamaan College of Engineering (Autonomous)
           </p>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto mb-10">
+          <p className="text-sm text-slate-500 max-w-xl mx-auto mb-10">
             Affiliated to Anna University, Chennai · Dr. M.G.R. Nagar, Hosur – 635130
           </p>
 
@@ -235,7 +235,7 @@ export default function LandingPage() {
             <Button
               onClick={() => scrollToSection('#about')}
               size="lg"
-              className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-2xl px-8 py-6 text-lg font-bold shadow-xl shadow-indigo-200 transition-all hover:shadow-2xl hover:shadow-indigo-300 active:scale-95 group"
+              className="bg-gradient-to-r from-indigo-700 to-blue-700 hover:from-indigo-800 hover:to-blue-800 text-white rounded-2xl px-8 py-6 text-lg font-bold shadow-xl shadow-indigo-200 transition-all hover:shadow-2xl hover:shadow-indigo-300 active:scale-95 group"
             >
               Explore IIC
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -244,7 +244,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               variant="outline"
               size="lg"
-              className="rounded-2xl px-8 py-6 text-lg font-bold border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all active:scale-95"
+              className="rounded-2xl px-8 py-6 text-lg font-bold border-2 border-slate-300 hover:border-indigo-400 hover:bg-slate-200 transition-all active:scale-95 bg-transparent"
             >
               Portal Login
             </Button>
@@ -253,7 +253,7 @@ export default function LandingPage() {
           {/* Scroll Indicator */}
           <button
             onClick={() => scrollToSection('#about')}
-            className="mt-16 inline-flex flex-col items-center text-slate-400 hover:text-indigo-500 transition-colors animate-bounce"
+            className="mt-16 inline-flex flex-col items-center text-slate-500 hover:text-indigo-600 transition-colors animate-bounce"
           >
             <span className="text-xs font-bold uppercase tracking-widest mb-1">Scroll</span>
             <ChevronDown className="h-5 w-5" />
@@ -268,17 +268,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-indigo-100/80 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 bg-indigo-100/50 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
               <Users className="h-3.5 w-3.5" />
               About Us
             </div>
             <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
               Fostering Innovation &{' '}
-              <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-700 to-blue-700 bg-clip-text text-transparent">
                 Entrepreneurship
               </span>
             </h2>
-            <p className="text-slate-500 max-w-3xl mx-auto text-lg leading-relaxed">
+            <p className="text-slate-600 max-w-3xl mx-auto text-lg leading-relaxed">
               The Institution's Innovation Council at ACE, Hosur is established under the initiative of the
               Ministry of Education, Government of India, to cultivate a culture of innovation among students
               and faculty through structured programs and industry collaborations.
@@ -286,7 +286,7 @@ export default function LandingPage() {
           </div>
 
           {/* Mission Card — Program Driven By */}
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-10 text-white mb-16 shadow-2xl shadow-indigo-200/50 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-indigo-700 to-blue-800 rounded-3xl p-10 text-white mb-16 shadow-2xl shadow-indigo-200/50 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
               <div>
@@ -302,7 +302,7 @@ export default function LandingPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-4">Programs Driven By</p>
                 <div className="grid grid-cols-2 gap-4">
                   {PROGRAM_DRIVEN_BY.map((item) => (
-                    <div key={item.label} className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 text-center border border-white/20">
+                    <div key={item.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 text-center border border-white/10">
                       <item.icon className={`h-8 w-8 mx-auto mb-2 ${item.color}`} />
                       <p className="text-sm font-bold leading-tight">{item.label}</p>
                     </div>
@@ -318,33 +318,33 @@ export default function LandingPage() {
             {PROGRAM_THEMES.map((theme) => (
               <Card
                 key={theme.title}
-                className="group border-0 shadow-lg shadow-slate-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 hover:-translate-y-2 rounded-2xl overflow-hidden"
+                className="group border-0 shadow-lg shadow-slate-200 hover:shadow-2xl hover:shadow-indigo-200 transition-all duration-500 hover:-translate-y-2 rounded-2xl overflow-hidden bg-slate-50"
               >
                 <CardContent className="p-6">
                   <div className={`${theme.bg} w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                     <theme.icon className="h-7 w-7" style={{ color: theme.iconColor }} />
                   </div>
                   <h4 className="font-bold text-lg text-slate-900 mb-2">{theme.title}</h4>
-                  <p className="text-slate-500 text-sm leading-relaxed">{theme.description}</p>
+                  <p className="text-slate-600 text-sm leading-relaxed">{theme.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
 
           {/* Program Types by Level */}
-          <div className="mt-16 bg-slate-50 rounded-3xl p-10">
+          <div className="mt-16 bg-slate-200/50 rounded-3xl p-10">
             <h3 className="text-2xl font-black text-slate-900 text-center mb-3">Program Types</h3>
-            <p className="text-slate-400 text-sm text-center mb-8">Activities organized across 4 progressive levels</p>
+            <p className="text-slate-500 text-sm text-center mb-8">Activities organized across 4 progressive levels</p>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {PROGRAM_TYPES_BY_LEVEL.map((level) => (
-                <div key={level.level} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div key={level.level} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                   <div className={`${level.color} text-white px-4 py-3`}>
                     <p className="font-bold text-sm">{level.level}</p>
                   </div>
                   <div className="p-4 space-y-2">
                     {level.types.map((t) => (
-                      <div key={t} className="flex items-center gap-2 text-sm text-slate-600">
-                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                      <div key={t} className="flex items-center gap-2 text-sm text-slate-700">
+                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
                         {t}
                       </div>
                     ))}
@@ -357,7 +357,7 @@ export default function LandingPage() {
           {/* SDG Alignment */}
           <div className="mt-16 text-center">
             <h3 className="text-2xl font-black text-slate-900 mb-3">SDG Alignment</h3>
-            <p className="text-slate-400 text-sm mb-8 max-w-2xl mx-auto">Our activities are aligned with the United Nations Sustainable Development Goals</p>
+            <p className="text-slate-500 text-sm mb-8 max-w-2xl mx-auto">Our activities are aligned with the United Nations Sustainable Development Goals</p>
             <div className="flex flex-wrap justify-center gap-2">
               {[
                 'No Poverty', 'Zero Hunger', 'Good Health', 'Quality Education',
@@ -368,9 +368,9 @@ export default function LandingPage() {
               ].map((goal, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-400 hover:text-indigo-700 transition-colors"
                 >
-                  <Globe className="h-3 w-3 text-indigo-400" />
+                  <Globe className="h-3 w-3 text-indigo-500" />
                   SDG {i + 1}: {goal}
                 </span>
               ))}
@@ -380,7 +380,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── CONTACT SECTION ─── */}
-      <section id="contact" className="py-24 px-6 bg-gradient-to-b from-slate-50 to-white">
+      <section id="contact" className="py-24 px-6 bg-gradient-to-b from-slate-100 to-slate-200">
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
