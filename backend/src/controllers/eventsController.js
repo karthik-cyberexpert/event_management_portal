@@ -17,7 +17,8 @@ const getEvents = async (req, res, next) => {
     let query = `
       SELECT e.*, v.name as venue_name, v.location as venue_location, 
              p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society,
-             EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report
+             EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report,
+             (SELECT submitted_at FROM event_reports er WHERE er.event_id = e.id LIMIT 1) as report_submitted_at
       FROM events e
       LEFT JOIN venues v ON e.venue_id = v.id
       LEFT JOIN profiles p ON e.submitted_by = p.id
@@ -103,7 +104,8 @@ const getEventById = async (req, res, next) => {
     const [events] = await db.query(
       `SELECT e.*, v.name as venue_name, v.location as venue_location, 
               p.first_name, p.last_name, p.role, p.department, p.club, p.professional_society,
-              EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report
+              EXISTS(SELECT 1 FROM event_reports er WHERE er.event_id = e.id) as has_report,
+              (SELECT submitted_at FROM event_reports er WHERE er.event_id = e.id LIMIT 1) as report_submitted_at
        FROM events e
        LEFT JOIN venues v ON e.venue_id = v.id
        LEFT JOIN profiles p ON e.submitted_by = p.id

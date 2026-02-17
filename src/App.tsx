@@ -18,6 +18,7 @@ import ManageClubs from "./pages/admin/ManageClubs";
 import ManageProfessionalSocieties from "./pages/admin/ManageProfessionalSocieties";
 import OnboardingPage from "./pages/Onboarding";
 import LandingPage from "./pages/LandingPage";
+import Summary from "./pages/shared/Summary";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const AppRoutes = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/all-events" element={<AllEvents />} />
+                  <Route path="/summary" element={<Summary />} />
                   
                   {profile?.role === 'admin' && (
                     <>
