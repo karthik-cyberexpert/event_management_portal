@@ -76,6 +76,11 @@ const Summary = () => {
       "S.No": index + 1,
       "Title": event.title,
       "Dept/Club/Society/Direct to HOD": event.department_club || "N/A",
+      "Event Date": event.event_date ? (
+        event.end_date && event.event_date !== event.end_date 
+          ? `${format(new Date(event.event_date), "dd/MM/yyyy")} - ${format(new Date(event.end_date), "dd/MM/yyyy")}`
+          : format(new Date(event.event_date), "dd/MM/yyyy")
+      ) : "N/A",
       "Submitted on": event.created_at ? format(new Date(event.created_at), "dd/MM/yyyy HH:mm:ss") : "N/A",
       "Approved by HOD": event.hod_approval_at ? format(new Date(event.hod_approval_at), "dd/MM/yyyy HH:mm:ss") : "N/A",
       "Approved by Dean": event.dean_approval_at ? format(new Date(event.dean_approval_at), "dd/MM/yyyy HH:mm:ss") : "N/A",
@@ -156,6 +161,7 @@ const Summary = () => {
                   <TableHead className="w-16 font-bold text-slate-700">S.No</TableHead>
                   <TableHead className="font-bold text-slate-700 min-w-[200px]">Title</TableHead>
                   <TableHead className="font-bold text-slate-700">Dept/Club/Society/Direct to HOD</TableHead>
+                  <TableHead className="font-bold text-slate-700">Event Date</TableHead>
                   <TableHead className="font-bold text-slate-700">Submitted on</TableHead>
                   <TableHead className="font-bold text-slate-700">Approved by HOD</TableHead>
                   <TableHead className="font-bold text-slate-700">Approved by Dean</TableHead>
@@ -166,7 +172,7 @@ const Summary = () => {
               <TableBody>
                 {paginatedEvents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-48 text-center">
+                    <TableCell colSpan={9} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center opacity-40">
                         <FileText className="h-12 w-12 mb-2" />
                         <p className="font-bold text-lg uppercase tracking-widest">No matching events found</p>
@@ -181,6 +187,13 @@ const Summary = () => {
                         <TableCell className="font-medium text-slate-500">{sNo}</TableCell>
                         <TableCell className="font-bold text-slate-900">{event.title}</TableCell>
                         <TableCell className="font-medium text-slate-600">{event.department_club || "N/A"}</TableCell>
+                        <TableCell className="font-bold text-primary text-sm">
+                          {event.event_date ? (
+                            event.end_date && event.event_date !== event.end_date 
+                              ? `${format(new Date(event.event_date), "dd/MM/yyyy")} - ${format(new Date(event.end_date), "dd/MM/yyyy")}`
+                              : format(new Date(event.event_date), "dd/MM/yyyy")
+                          ) : "N/A"}
+                        </TableCell>
                         <TableCell className="text-slate-600 text-sm">
                           {event.created_at ? format(new Date(event.created_at), "dd/MM/yyyy HH:mm:ss") : "N/A"}
                         </TableCell>
