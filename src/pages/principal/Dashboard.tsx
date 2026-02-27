@@ -52,7 +52,7 @@ const PrincipalDashboard = () => {
       const data = await api.events.list();
       setAllViewableEvents(data);
       const pendingEvents = data.filter((event: any) => 
-        event.status === 'pending_principal' || event.status === 'returned_to_principal'
+        event.status === 'pending_principal' || event.status === 'returned_to_principal' || event.status === 'resubmitted'
       );
       setEvents(pendingEvents);
     } catch (error: any) {
@@ -78,7 +78,7 @@ const PrincipalDashboard = () => {
   };
   
   const isReviewable = (event: any) => {
-    return event.status === 'pending_principal' || event.status === 'returned_to_principal';
+    return event.status === 'pending_principal' || event.status === 'returned_to_principal' || event.status === 'resubmitted';
   };
 
   const eventDays = allViewableEvents.filter(e => e.status === 'approved').map(e => new Date(e.event_date));

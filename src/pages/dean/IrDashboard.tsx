@@ -48,7 +48,7 @@ const IrDashboard = () => {
       setAllViewableEvents(data);
       
       const pendingEvents = data.filter((event: any) => 
-        event.status === 'pending_dean' || event.status === 'returned_to_dean'
+        event.status === 'pending_dean' || event.status === 'returned_to_dean' || event.status === 'resubmitted'
       );
       
       setEvents(pendingEvents);
@@ -76,7 +76,7 @@ const IrDashboard = () => {
   
   const isReviewable = (event: any) => {
     const status = event.status;
-    return status === 'pending_dean' || status === 'returned_to_dean';
+    return status === 'pending_dean' || status === 'returned_to_dean' || status === 'resubmitted';
   };
 
   const eventDays = allViewableEvents.filter(e => e.status === 'approved').map(e => new Date(e.event_date));

@@ -48,7 +48,7 @@ const statusColors: { [key: string]: string } = {
 };
 
 const ALL_STATUSES = [
-  'pending_hod', 'returned_to_coordinator', 'pending_dean', 'returned_to_hod', 
+  'pending_hod', 'returned_to_coordinator', 'resubmitted', 'pending_dean', 'returned_to_hod', 
   'pending_principal', 'returned_to_dean', 'approved', 'rejected', 'cancelled'
 ];
 
@@ -136,8 +136,8 @@ const AllEvents = () => {
     const status = event.status;
     
     if (role === 'hod' && (status === 'pending_hod' || status === 'returned_to_hod' || status === 'resubmitted')) return true;
-    if (role === 'dean' && (status === 'pending_dean' || status === 'returned_to_dean')) return true;
-    if (role === 'principal' && status === 'pending_principal') return true;
+    if (role === 'dean' && (status === 'pending_dean' || status === 'returned_to_dean' || status === 'resubmitted')) return true;
+    if (role === 'principal' && (status === 'pending_principal' || status === 'resubmitted')) return true;
     
     return false;
   };
