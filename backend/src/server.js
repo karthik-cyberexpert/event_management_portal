@@ -34,8 +34,9 @@ const societiesRoutes = require('./routes/societies');
 const usersRoutes = require('./routes/users');
 const uploadRoutes = require('./routes/uploads');
 const aiRoutes = require('./routes/ai');
-const notificationsRoutes = require('./routes/notifications');
+const notificationRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
+const headcountRoutes = require('./routes/headcount');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
@@ -46,8 +47,9 @@ app.use('/api/societies', societiesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/notifications', notificationsRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/headcount', headcountRoutes);
 
 
 // Error handling

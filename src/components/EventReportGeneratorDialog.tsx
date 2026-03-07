@@ -132,6 +132,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [headcountChecking, setHeadcountChecking] = useState(false);
+  const [headcountResults, setHeadcountResults] = useState<any[]>([]);
+  const [isHeadcountValid, setIsHeadcountValid] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
   const reportContentRef = useRef<HTMLDivElement>(null);
   const attachmentsRef = useRef<HTMLDivElement>(null);
@@ -210,6 +213,64 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       youtube_url: '',
     },
   });
+
+  const studentCount = form.watch('student_participants');
+  const facultyCount = form.watch('faculty_participants');
+  const externalCount = form.watch('external_participants');
+  const totalEnteredParticipants = Number(studentCount || 0) + Number(facultyCount || 0) + Number(externalCount || 0);
+  const photos = form.watch('photos');
+
+  const checkHeadcounts = useCallback(async (photoFiles: File[]) => {
+    if (photoFiles.length < MIN_PHOTOS) return;
+    
+    setHeadcountChecking(true);
+    try {
+      const result = await api.headcount.detectBatch(photoFiles);
+      if (result.success) {
+        setHeadcountResults(result.images);
+      } else {
+        toast.error("Failed to analyze images for headcount");
+      }
+    } catch (error: any) {
+      console.error("Headcount analysis error:", error);
+      toast.error("Headcount analysis failed: " + (error.message || "Unknown error"));
+    } finally {
+      setHeadcountChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (photos.length >= MIN_PHOTOS) {
+      checkHeadcounts(photos);
+    } else {
+      setHeadcountResults([]);
+      setIsHeadcountValid(true);
+    }
+  }, [photos, checkHeadcounts]);
+
+  useEffect(() => {
+    // Only validate if we have results and a non-zero participant count
+    if (headcountResults.length > 0 && totalEnteredParticipants > 0 && !headcountChecking) {
+      const isValid = headcountResults.some(img => {
+        const diff = Math.abs(img.face_count - totalEnteredParticipants);
+        return diff <= 5;
+      });
+      
+      setIsHeadcountValid(isValid);
+      
+      if (!isValid) {
+        const maxDetected = Math.max(...headcountResults.map(i => i.face_count), 0);
+        toast.error(`Head Count not match with participant count (${totalEnteredParticipants}). Closest detected was ${maxDetected}.`);
+      } else {
+        toast.success("Head count validation passed!");
+      }
+    } else if (totalEnteredParticipants === 0 && !headcountChecking && photos.length >= MIN_PHOTOS) {
+        // Don't validate if participant count is 0 but we have photos
+        setIsHeadcountValid(false);
+    } else {
+      setIsHeadcountValid(true);
+    }
+  }, [headcountResults, totalEnteredParticipants, headcountChecking, photos.length]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const currentFiles = form.getValues('photos') || [];
@@ -625,7 +686,26 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                   {selectedSocialMedia.includes('youtube') && <FormField control={form.control} name="youtube_url" render={({ field }) => (<FormItem><FormLabel>YouTube URL</FormLabel><FormControl><Input {...field} placeholder="https://youtube.com/..." /></FormControl><FormMessage /></FormItem>)} />}
                 </div>
               </div>
-              <DialogFooter><Button type="submit" disabled={isGenerating}>{isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate & Preview Report'}</Button></DialogFooter>
+              <DialogFooter>
+                {!isHeadcountValid && totalEnteredParticipants > 0 && !headcountChecking && (
+                  <div className="flex items-center gap-2 text-red-500 text-sm font-medium mr-auto">
+                    <AlertCircle className="h-4 w-4" />
+                    Head count mismatch with participants.
+                  </div>
+                )}
+                {headcountChecking && (
+                  <div className="flex items-center gap-2 text-amber-500 text-sm font-medium mr-auto">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analyzing headcount...
+                  </div>
+                )}
+                <Button 
+                  type="submit" 
+                  disabled={isGenerating || headcountChecking || !isHeadcountValid}
+                >
+                  {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate & Preview Report'}
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         )}

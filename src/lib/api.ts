@@ -218,4 +218,20 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
+
+  // Headcount
+  headcount: {
+    detectBatch: (files: File[]) => {
+      const formData = new FormData();
+      files.forEach(file => formData.append('files', file));
+      const token = getToken();
+      return fetch(`${API_BASE}/headcount/detect-batch`, {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: formData,
+      }).then(res => res.json());
+    },
+  },
 };
