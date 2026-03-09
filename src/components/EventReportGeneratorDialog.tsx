@@ -252,15 +252,26 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     // Only validate if we have results and a non-zero participant count
     if (headcountResults.length > 0 && totalEnteredParticipants > 0 && !headcountChecking) {
       const isValid = headcountResults.some(img => {
-        const diff = Math.abs(img.face_count - totalEnteredParticipants);
-        return diff <= 5;
+        if (totalEnteredParticipants <= 50) {
+          // If <= 50, check for +/- 10 tolerance
+          return Math.abs(img.face_count - totalEnteredParticipants) <= 10;
+        } else {
+          // If > 50, accept if we detect at least 50 people
+          return img.face_count >= 50;
+        }
       });
       
       setIsHeadcountValid(isValid);
       
       if (!isValid) {
         const maxDetected = Math.max(...headcountResults.map(i => i.face_count), 0);
-        toast.error(`Head Count not match with participant count (${totalEnteredParticipants}). Closest detected was ${maxDetected}.`);
+        if (totalEnteredParticipants <= 50) {
+          const min = Math.max(0, totalEnteredParticipants - 10);
+          const max = totalEnteredParticipants + 10;
+          toast.error(`For ${totalEnteredParticipants} participants, image must show ${min}-${max} people. Highest detected was ${maxDetected}.`);
+        } else {
+          toast.error(`For more than 50 participants, at least 50 people must be visible in one image. Highest detected was ${maxDetected}.`);
+        }
       } else {
         toast.success("Head count validation passed!");
       }

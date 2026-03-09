@@ -5,7 +5,7 @@ const FormData = require('form-data');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
-const HEADCOUNT_SERVICE_URL = process.env.HEADCOUNT_SERVICE_URL || 'http://127.0.0.1:5001';
+const HEADCOUNT_SERVICE_URL = process.env.HEADCOUNT_SERVICE_URL || 'http://127.0.0.1:5012';
 
 router.post('/detect-batch', upload.array('files'), async (req, res) => {
   try {
