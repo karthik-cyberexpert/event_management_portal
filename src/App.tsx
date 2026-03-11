@@ -7,6 +7,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
+import MeetTheTeamFooter from "./components/MeetTheTeamFooter";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AllEvents from "./pages/AllEvents"; // Updated import
@@ -95,6 +96,7 @@ const App = () => (
             <main className="flex-grow">
               <AppRoutes />
             </main>
+            <MeetTheTeamFooter />
           </div>
         </AuthProvider>
       </BrowserRouter>
