@@ -234,4 +234,22 @@ export const api = {
       }).then(res => res.json());
     },
   },
+  
+  // Admin
+  admin: {
+    exportDatabase: async () => {
+      const token = getToken();
+      const response = await fetch(`${API_BASE}/admin/database-export`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export database');
+      }
+      
+      return response.blob();
+    },
+  },
 };

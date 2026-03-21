@@ -37,6 +37,7 @@ const aiRoutes = require('./routes/ai');
 const notificationRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
 const headcountRoutes = require('./routes/headcount');
+const adminRoutes = require('./routes/admin');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
@@ -50,6 +51,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/headcount', headcountRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 
 // Error handling

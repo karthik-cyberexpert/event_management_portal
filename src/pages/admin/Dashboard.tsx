@@ -13,8 +13,12 @@ import {
   XCircle,
   AlertCircle,
   Building,
-  List
+  List,
+  Download,
+  Database,
+  FileDown
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -39,6 +43,7 @@ const AdminDashboard = () => {
   });
   const [recentEvents, setRecentEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,6 +83,27 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const blob = await api.admin.exportDatabase();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ems_database_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.sql`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Database export started successfully.');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export database.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const statCards = [
     { title: "Total Events", value: stats.totalEvents, icon: Calendar, color: "text-indigo-600", bg: "bg-indigo-50" },
     { title: "Total Users", value: stats.totalUsers, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -92,6 +118,23 @@ const AdminDashboard = () => {
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
           <p className="text-slate-500 font-medium mt-1">A high-level overview of the Event Management System.</p>
         </div>
+        <Button 
+          onClick={handleExport} 
+          disabled={exporting}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-200 transition-all flex items-center gap-2 px-6"
+        >
+          {exporting ? (
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <span>Exporting...</span>
+            </div>
+          ) : (
+            <>
+              <Database className="h-5 w-5" />
+              <span>Export SQL</span>
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Stats Cards */}

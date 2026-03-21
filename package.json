@@ -8,7 +8,7 @@
     "dev:frontend": "vite",
     "dev:backend": "npm run dev --prefix backend",
     "dev:headcount": "python headcount/app.py",
-    "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:headcount\"",
+    "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
