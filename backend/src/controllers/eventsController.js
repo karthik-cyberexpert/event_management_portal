@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { createNotification } = require('./notificationsController');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Get all events with filters
@@ -165,7 +166,6 @@ const createEvent = async (req, res, next) => {
   try {
     const eventData = req.body;
     const userId = req.user.userId;
-    const { v4: uuidv4 } = require('uuid');
     const eventId = uuidv4();
 
     // Generate unique code (6 chars)
@@ -464,9 +464,9 @@ const updateEventStatus = async (req, res, next) => {
     
     // Record in history
     await db.query(
-      `INSERT INTO event_history (event_id, changed_by, old_status, new_status, remarks)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, req.user.userId, null, status, remarks]
+      `INSERT INTO event_history (id, event_id, changed_by, old_status, new_status, remarks)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), id, req.user.userId, null, status, remarks]
     );
 
     // Notify Coordinator of status update
